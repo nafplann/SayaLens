@@ -20,6 +20,12 @@ A powerful macOS system tray application for **QR code scanning** and **OCR text
 - 🎨 **Beautiful UI**: Modern, native-looking interface
 - 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to macOS appearance
 
+## ☕ Support
+
+If you find SayaLens useful, consider supporting the development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/nafplann)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -32,8 +38,8 @@ A powerful macOS system tray application for **QR code scanning** and **OCR text
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd project\ 2
+   git clone git@github.com:nafplann/SayaLens.git
+   cd SayaLens
    ```
 
 2. **Install dependencies**
@@ -109,36 +115,6 @@ assets/
 ├── icon.png                # Application icon
 ├── tray-icon-light.png     # Tray icon for light mode (dark icon)
 └── tray-icon-dark.png      # Tray icon for dark mode (light icon)
-```
-
-### Available Scripts
-
-```bash
-# Development
-yarn dev              # Run in development mode
-yarn test             # Run unit tests
-yarn test:watch       # Run tests in watch mode
-yarn test:coverage    # Generate test coverage report
-
-# Building
-yarn build            # Build distributable app
-yarn pack             # Build without creating installer
-yarn dist             # Build and create installer
-```
-
-### Testing
-
-The project includes comprehensive unit tests for all core modules:
-
-```bash
-# Run all tests
-yarn test
-
-# Run tests in watch mode during development
-yarn test:watch
-
-# Generate coverage report
-yarn test:coverage
 ```
 
 ### Architecture Overview
