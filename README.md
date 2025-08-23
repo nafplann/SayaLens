@@ -1,4 +1,4 @@
-# Tray Scanner
+# SayaLens
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Electron](https://img.shields.io/badge/Electron-32.0.1-47848F?logo=electron)](https://electronjs.org)
@@ -6,7 +6,7 @@
 
 A powerful macOS system tray application for **QR code scanning** and **OCR text extraction** from screen captures. Built with Electron, this native desktop app provides seamless integration with macOS, offering quick access to scan any part of your screen.
 
-![Tray Scanner Demo](assets/demo.gif)
+![SayaLens Demo](assets/demo.gif)
 
 ## ✨ Features
 
@@ -61,23 +61,23 @@ A powerful macOS system tray application for **QR code scanning** and **OCR text
 
 ### Getting Started
 
-1. **Launch the app** - The Tray Scanner icon will appear in your macOS menu bar
+1. **Launch the app** - The SayaLens icon will appear in your macOS menu bar
 2. **Grant permissions** - When first running, you'll be prompted to grant screen recording permissions:
    - Open **System Preferences** (or **System Settings** on macOS 13+)
    - Navigate to **Privacy & Security** → **Screen Recording**
-   - Add and enable **Tray Scanner**
+   - Add and enable **SayaLens**
    - Restart the application
 
 ### Scanning QR Codes
 
-1. Click the **Tray Scanner** icon in your menu bar
+1. Click the **SayaLens** icon in your menu bar
 2. Select **"Scan QR"**
 3. Drag to select the area containing the QR code
 4. Release to scan - the result will be displayed and copied to your clipboard
 
 ### Extracting Text (OCR)
 
-1. Click the **Tray Scanner** icon in your menu bar
+1. Click the **SayaLens** icon in your menu bar
 2. Select **"Capture Text"**
 3. Drag to select the text area
 4. Release to extract - the text will be displayed with confidence score
@@ -172,7 +172,7 @@ Electron Builder configuration in `package.json`:
 {
   "build": {
     "appId": "com.trayscanners.app",
-    "productName": "Tray Scanner",
+    "productName": "SayaLens",
     "mac": {
       "target": "dmg",
       "category": "public.app-category.utilities",
@@ -213,7 +213,7 @@ The application will automatically switch between these icons based on the syste
 **Solution**:
 1. Open System Preferences/Settings
 2. Go to Privacy & Security → Screen Recording  
-3. Add Tray Scanner and enable it
+3. Add SayaLens and enable it
 4. Restart the application
 
 ### OCR Accuracy Issues

@@ -139,7 +139,7 @@ class TrayScanner {
     console.log(`Created tray icon for ${process.platform === 'darwin' ? (nativeTheme.shouldUseDarkColors ? 'dark' : 'light') + ' mode' : 'default mode'}`);
 
     this.tray = new Tray(icon);
-    this.tray.setToolTip('SayaSnap - QR & OCR Tool');
+    this.tray.setToolTip('SayaLens - A text grabber');
 
     const contextMenu = Menu.buildFromTemplate([
       {
