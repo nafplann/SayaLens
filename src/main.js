@@ -4,6 +4,8 @@ import { dirname, join } from 'path';
 import ScreenCapture from './modules/screenCapture.js';
 import QRScanner from './modules/qrScanner.js';
 import OCRProcessor from './modules/ocrProcessor.js';
+import { tmpdir } from "node:os";
+import { writeFile } from "node:fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -210,12 +212,22 @@ class TrayScanner {
         console.log('Starting OCR capture process...');
         const imageBuffer = await this.screenCapture.captureArea(bounds);
         console.log('Screen capture successful, processing OCR...');
-        const ocrResult = await this.ocrProcessor.extractText(imageBuffer);
+
+        // Create a temporary image file
+        const tempDir = tmpdir();
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2);
+        const tempFilePath = join(tempDir, `SayaLens_ocr_temp_${timestamp}_${randomSuffix}.png`);
+
+        // Write the image buffer to the temporary file
+        await writeFile(tempFilePath, imageBuffer, () => {});
+
+        const ocrResult = await this.ocrProcessor.extractText(tempFilePath);
         
         // Add the captured image to the result
         return {
           ...ocrResult,
-          capturedImage: `data:image/png;base64,${imageBuffer.toString('base64')}`
+          capturedImage: tempFilePath
         };
       } catch (error) {
         console.error('OCR capture failed:', error);
@@ -229,7 +241,7 @@ class TrayScanner {
           success: false,
           error: error.message
         };
-      }
+      } finally {}
     });
 
     ipcMain.handle('copy-to-clipboard', (_event, text) => {

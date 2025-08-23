@@ -32,7 +32,7 @@ export default class OCRProcessor {
   /**
    * Extracts text from an image buffer using OCR
    * @async
-   * @param {Buffer} imageBuffer - The image data as a Buffer
+   * @param {string} filePath - The image data as a Buffer
    * @returns {Promise<Object>} The OCR result object
    * @returns {boolean} returns.success - Whether text extraction was successful
    * @returns {string} [returns.text] - The extracted text (if successful)
@@ -48,12 +48,12 @@ export default class OCRProcessor {
    *   console.error('OCR failed:', result.error);
    * }
    */
-  async extractText(imageBuffer) {
+  async extractText(filePath) {
     try {
       const worker = await this.initWorker();
       
       // Perform OCR recognition on the image buffer
-      const { data: { text, confidence } } = await worker.recognize(imageBuffer);
+      const { data: { text, confidence } } = await worker.recognize(filePath);
       
       // Clean up extracted text by trimming whitespace
       const cleanText = text.trim();
