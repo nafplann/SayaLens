@@ -18,6 +18,7 @@ A powerful macOS system tray application for **QR code scanning** and **OCR text
 - 🔐 **Privacy First**: All processing happens locally on your device
 - ⚡ **Fast Processing**: Optimized for quick results
 - 🎨 **Beautiful UI**: Modern, native-looking interface
+- 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to macOS appearance
 
 ## 🚀 Quick Start
 
@@ -105,7 +106,9 @@ tests/
 └── modules/             # Unit tests for each module
 
 assets/
-└── icon.png            # Application icon
+├── icon.png                # Application icon
+├── tray-icon-light.png     # Tray icon for light mode (dark icon)
+└── tray-icon-dark.png      # Tray icon for dark mode (light icon)
 ```
 
 ### Available Scripts
@@ -178,6 +181,21 @@ Electron Builder configuration in `package.json`:
   }
 }
 ```
+
+### Tray Icon Assets
+
+For proper dark/light mode support on macOS, you need to provide two tray icon files in the `assets/` directory:
+
+- **`tray-icon-light.png`**: Dark icon for light mode (16x16px or 32x32px recommended)
+- **`tray-icon-dark.png`**: Light icon for dark mode (16x16px or 32x32px recommended)
+
+The application will automatically switch between these icons based on the system appearance setting. If these files are missing, a fallback icon will be used.
+
+**Icon Guidelines:**
+- Use simple, monochromatic designs
+- Ensure good contrast against menu bar backgrounds
+- Test with both light and dark menu bars
+- PNG format with transparent backgrounds work best
 
 ## 🔒 Privacy & Security
 

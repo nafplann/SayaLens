@@ -32,6 +32,9 @@ class TrayScanner {
     // Create tray
     this.createTray();
 
+    // Set up theme change listener for macOS
+    this.setupThemeChangeListener();
+
     // Set up IPC handlers
     this.setupIpcHandlers();
 
@@ -76,12 +79,67 @@ class TrayScanner {
     });
   }
 
+  /**
+   * Get the appropriate tray icon path based on the current system theme
+   * @returns {string} Path to the tray icon
+   */
+  getTrayIconPath() {
+    const isDarkMode = nativeTheme.shouldUseDarkColors;
+    const iconName = isDarkMode ? 'tray-icon-light.png' : 'tray-icon-dark.png';
+    return join(__dirname, '..', 'assets', iconName);
+  }
+
+  /**
+   * Create a tray icon image with theme awareness and fallback handling
+   * @returns {Electron.NativeImage} The created tray icon
+   */
+  createTrayIconImage() {
+    const fallbackIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAaCxAAAAsQHGLUmNAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAVBJREFUSInF1bEuBFEUxvEfUWyzRKMgsSKiIEGvVSoUKgkPQAXQKjyDJyBEQSGRrbR6JBQiEiIkGkIhFEuxd3bHZGzs7Gx8yeROzj33/03uOXMvbVZH7L2EORQSOUe4+GX9OGYTsXcc4jYeLOEFX0mngrUGH7gWcpJrngOzptUwMdYA9feNBdYrdIVgTxgv0YkFDDQJvsduYNSYXSmJC9huEh7pK5jU1JmSNJIRDqPJQGTwircWwEm9BWZtizZxkKPBFB7iBp/qfXuD44zgm8TYfkV/8jTWpRc9iyrYwElewP9TR0psCYsZedvYigeiLiqgX7X6w5jJaHASxiE84iOqwTJOM0LTdI4V6l3TjWKOBsXATG3L6xbAV8lA2mm6o9rHE03Cz7D322TbLpxIJdVrLs8rc5D6Ft1iEvPoiwEqKDcwKKPXz1o+YR93Ddblp2/k9U7YtyTYYgAAAABJRU5ErkJggg==';
+
+    // For macOS, try to use theme-aware icons
+    if (process.platform === 'darwin') {
+      try {
+        const iconPath = this.getTrayIconPath();
+        return nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+      } catch (error) {
+        console.warn('Failed to load theme-aware tray icon, using fallback:', error.message);
+      }
+    }
+    
+    // Use fallback icon for non-macOS platforms or when theme-specific icons fail
+    return nativeImage.createFromDataURL(fallbackIconData).resize({ width: 16, height: 16 });
+  }
+
+  /**
+   * Set up theme change listener for macOS
+   */
+  setupThemeChangeListener() {
+    if (process.platform === 'darwin') {
+      nativeTheme.on('updated', () => {
+        console.log('System theme changed, updating tray icon...');
+        this.updateTrayIcon();
+      });
+    }
+  }
+
+  /**
+   * Update the tray icon when theme changes
+   */
+  updateTrayIcon() {
+    if (this.tray) {
+      const icon = this.createTrayIconImage();
+      this.tray.setImage(icon);
+      console.log(`Tray icon updated for ${nativeTheme.shouldUseDarkColors ? 'dark' : 'light'} mode`);
+    }
+  }
+
   createTray() {
-    // Create tray icon (using a simple text-based icon for now)
-    const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAACxAAAAsQHGLUmNAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAVBJREFUSInF1bEuBFEUxvEfUWyzRKMgsSKiIEGvVSoUKgkPQKXQKjyDJyBEQSGRrbR6JBQiEiIkGkIhFEuxd3bHZGzs7Gx8yeROzj33/03uOXMvbVZH7L2EORQSOUe4+GX9OGYTsXcc4jYeLOEFX4mngrUGH7gWcpLrngOzptUwMdYA9leNBdYqdIVgTxgv0YkFDDQJvsduYNSYXSmJC9huEh7pK5jU1JmSNJIRDqPJQGTwircWwEm9BWZtizZxkKPBFB7iBp/qfXuD44zgm8TYfkV/8jTWpRc9iyrYwElewP9TR0psCYsZedvYigeiLiqgX7X6w5jJaHASxiE84iOqwTJOM0LTdI4V6l3TjWKOBsXATG3L6xbAV8lA2mm6o9rHE03Cz7D322TbLpxIJdVrLs8rc5D6Ft1iEvPoiwEqKDcwKKPXz1o+YR93Ddblp2/k9U7YtyTYYgAAAABJRU5ErkJggg==').resize({ width: 16, height: 16 });
+    // Create tray icon using the consolidated method
+    const icon = this.createTrayIconImage();
+    console.log(`Created tray icon for ${process.platform === 'darwin' ? (nativeTheme.shouldUseDarkColors ? 'dark' : 'light') + ' mode' : 'default mode'}`);
 
     this.tray = new Tray(icon);
-    this.tray.setToolTip('Tray Scanner - QR & OCR Tool');
+    this.tray.setToolTip('SayaSnap - QR & OCR Tool');
 
     const contextMenu = Menu.buildFromTemplate([
       {
