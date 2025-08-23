@@ -28,7 +28,10 @@
       "target": "dmg",
       "category": "public.app-category.utilities",
       "darkModeSupport": true,
-      "icon": "assets/appicon.png"
+      "icon": "assets/appicon.png",
+      "extendInfo": {
+        "LSUIElement": 1
+      }
     }
   },
   "dependencies": {

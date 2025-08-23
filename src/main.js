@@ -345,6 +345,11 @@ class TrayScanner {
 const trayScanner = new TrayScanner();
 
 app.whenReady().then(() => {
+  // Hide Dock icon on macOS to make it an agent app
+  if (process.platform === 'darwin') {
+    app.dock.hide();
+  }
+  
   trayScanner.init();
 });
 
