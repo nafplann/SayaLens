@@ -161,9 +161,11 @@ class ScreenCaptureUI {
   }
 
   showLoading() {
-    this.loading.style.display = 'block';
-    this.selection.style.display = 'none';
-    this.coordinates.style.display = 'none';
+    setTimeout(() => {
+      this.loading.style.display = 'block';
+      this.selection.style.display = 'none';
+      this.coordinates.style.display = 'none';
+    }, 100);
   }
 
   hideLoading() {
