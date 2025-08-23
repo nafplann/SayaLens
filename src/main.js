@@ -282,7 +282,8 @@ class TrayScanner {
         nodeIntegration: false,
         contextIsolation: true,
         preload: preloadPath
-      }
+      },
+      title: 'SayaLens'
     });
 
     console.log('captureSize: ', this.captureWindow.getContentSize());
