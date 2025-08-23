@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "electron src/main.js",
     "build": "electron-builder",
+    "build:win": "electron-builder --win",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --publish=never",
     "test": "jest",
@@ -32,6 +33,16 @@
       "extendInfo": {
         "LSUIElement": 1
       }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/appicon.png",
+      "publisherName": "SayaLens"
     }
   },
   "dependencies": {
