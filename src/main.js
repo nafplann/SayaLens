@@ -241,7 +241,7 @@ class TrayScanner {
           success: false,
           error: error.message
         };
-      } finally {}
+      } finally { /* empty */ }
     });
 
     ipcMain.handle('copy-to-clipboard', (_event, text) => {
