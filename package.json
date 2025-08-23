@@ -4,13 +4,14 @@
   "author": "nafplann@gmail.com",
   "description": "Extract text from anywhere on your screen in seconds",
   "main": "src/main.js",
-  "type": "module",
   "scripts": {
-    "dev": "electron src/main.js",
-    "build": "electron-builder",
-    "build:win": "electron-builder --win",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --publish=never",
+    "dev": "concurrently \"npm run dev:react\" \"wait-on http://localhost:5173 && electron src/main.js\"",
+    "dev:react": "vite",
+    "build": "npm run build:react && electron-builder",
+    "build:react": "tsc && vite build",
+    "build:win": "npm run build:react && electron-builder --win",
+    "pack": "npm run build:react && electron-builder --dir",
+    "dist": "npm run build:react && electron-builder --publish=never",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -22,7 +23,10 @@
       "output": "dist"
     },
     "files": [
-      "src/**/*",
+      "src/main.js",
+      "src/preload.js",
+      "src/modules/**/*",
+      "dist-react/**/*",
       "assets/**/*"
     ],
     "mac": {
@@ -48,7 +52,15 @@
   "dependencies": {
     "jsqr": "^1.4.0",
     "sharp": "^0.33.5",
-    "tesseract.js": "^5.1.1"
+    "tesseract.js": "^5.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "lucide-react": "^0.451.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^1.14.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-toast": "^1.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -57,7 +69,21 @@
     "eslint": "^9.9.1",
     "globals": "^15.9.0",
     "jest": "^29.7.0",
-    "jest-environment-node": "^29.7.0"
+    "jest-environment-node": "^29.7.0",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@types/node": "^20.4.10",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.5",
+    "tailwindcss": "^3.3.3",
+    "tailwindcss-animate": "^1.0.6",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.27",
+    "concurrently": "^8.2.0",
+    "wait-on": "^7.0.1"
   },
   "jest": {
     "testEnvironment": "node",

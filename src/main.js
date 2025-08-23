@@ -300,7 +300,13 @@ class TrayScanner {
 
     console.log('captureSize: ', this.captureWindow.getContentSize());
 
-    this.captureWindow.loadFile(join(__dirname, 'capture.html'));
+    // Load capture window - development vs production
+    const isDev = !app.isPackaged;
+    if (isDev) {
+      this.captureWindow.loadURL('http://localhost:5173/capture.html');
+    } else {
+      this.captureWindow.loadFile(join(__dirname, '..', 'dist-react', 'capture.html'));
+    }
 
     // Add error handling for preload script
     this.captureWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
@@ -341,7 +347,13 @@ class TrayScanner {
       }
     });
 
-    this.resultWindow.loadFile(join(__dirname, 'result.html'));
+    // Load result window - development vs production
+    const isDev = !app.isPackaged;
+    if (isDev) {
+      this.resultWindow.loadURL('http://localhost:5173/result.html');
+    } else {
+      this.resultWindow.loadFile(join(__dirname, '..', 'dist-react', 'result.html'));
+    }
 
     this.resultWindow.webContents.once('did-finish-load', () => {
       this.resultWindow.webContents.send('show-data', data);
