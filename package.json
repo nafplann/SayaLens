@@ -1,0 +1,56 @@
+{
+  "name": "polong",
+  "version": "1.0.0",
+  "description": "Extract text from anywhere on your screen in seconds",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron src/main.js",
+    "build": "electron-builder",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish=never",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "build": {
+    "appId": "com.trayscanners.app",
+    "productName": "Tray Scanner",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities",
+      "darkModeSupport": true
+    }
+  },
+  "dependencies": {
+    "electron": "^32.0.1",
+    "jsqr": "^1.4.0",
+    "sharp": "^0.33.5",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "electron-builder": "^25.0.5",
+    "eslint": "^9.9.1",
+    "globals": "^15.9.0",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js"
+    ]
+  }
+}

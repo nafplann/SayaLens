@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen Capture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: rgba(0, 0, 0, 0);
+      cursor: crosshair;
+      user-select: none;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      border-radius: 0;
+      border: none;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0);
+      z-index: 1;
+      border: 1px solid #7f0a0a;
+      border-radius: 12px;
+    }
+
+    .selection {
+      position: fixed;
+      border: 2px solid #007AFF;
+      background: rgba(0, 122, 255, 0.1);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .instructions {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 3;
+      backdrop-filter: blur(10px);
+    }
+
+    .coordinates {
+      position: fixed;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'SF Mono', Menlo, Monaco, monospace;
+      z-index: 3;
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+    }
+
+    .loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      text-align: center;
+      z-index: 4;
+      backdrop-filter: blur(20px);
+      display: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #007AFF;
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+<div class="overlay"></div>
+<div class="instructions" id="instructions">
+  Drag to select area, then release to capture
+</div>
+<div class="coordinates" id="coordinates" style="display: none;"></div>
+<div class="selection" id="selection" style="display: none;"></div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div id="loadingText">Processing...</div>
+</div>
+
+<script src="capture.js"></script>
+</body>
+</html>

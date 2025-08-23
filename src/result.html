@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      user-select: none;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-height: 450px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      border-radius: 6px;
+    }
+    
+    .qr-icon {
+      background: linear-gradient(135deg, #007AFF, #5856D6);
+    }
+    
+    .text-icon {
+      background: linear-gradient(135deg, #34C759, #30D158);
+    }
+    
+    .error-icon {
+      background: linear-gradient(135deg, #FF3B30, #FF6B6B);
+    }
+    
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+    
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      min-height: 0;
+    }
+    
+    .result-text {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #1d1d1f;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 120px;
+      overflow-y: auto;
+      font-family: 'SF Mono', Menlo, Monaco, monospace;
+    }
+    
+    .error-message {
+      color: #FF3B30;
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .confidence {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .captured-image {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .captured-image img {
+      max-width: 100%;
+      max-height: 150px;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .image-label {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background: #007AFF;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0056CC;
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #1d1d1f;
+    }
+    
+    .btn-secondary:hover {
+      background: #e8eaed;
+      transform: translateY(-1px);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .copy-feedback {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(52, 199, 89, 0.9);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+    
+    .copy-feedback.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon" id="icon"></div>
+      <h2 class="title" id="title"></h2>
+    </div>
+    
+    <div class="content" id="content">
+      <!-- Content will be populated by JavaScript -->
+    </div>
+    
+    <div class="actions" id="actions">
+      <!-- Actions will be populated by JavaScript -->
+    </div>
+  </div>
+  
+  <div class="copy-feedback" id="copyFeedback">
+    Copied to clipboard!
+  </div>
+
+  <script src="result.js"></script>
+</body>
+</html>
