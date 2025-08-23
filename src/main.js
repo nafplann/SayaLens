@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, globalShortcut, screen, desktopCapturer, clipboard, nativeImage, dialog, shell } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcMain, globalShortcut, screen, desktopCapturer, clipboard, nativeImage, nativeTheme, dialog, shell } from 'electron';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import ScreenCapture from './modules/screenCapture.js';
