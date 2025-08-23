@@ -1,6 +1,7 @@
 {
   "name": "sayalens",
   "version": "1.0.0",
+  "author": "nafplann@gmail.com",
   "description": "Extract text from anywhere on your screen in seconds",
   "main": "src/main.js",
   "type": "module",
@@ -14,8 +15,8 @@
     "test:coverage": "jest --coverage"
   },
   "build": {
-    "appId": "com.trayscanners.app",
-    "productName": "Tray Scanner",
+    "appId": "com.nafplann.sayalens",
+    "productName": "SayaLens",
     "directories": {
       "output": "dist"
     },
@@ -26,17 +27,18 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.utilities",
-      "darkModeSupport": true
+      "darkModeSupport": true,
+      "icon": "assets/appicon.png"
     }
   },
   "dependencies": {
-    "electron": "^32.0.1",
     "jsqr": "^1.4.0",
     "sharp": "^0.33.5",
     "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "electron": "^32.0.1",
     "electron-builder": "^25.0.5",
     "eslint": "^9.9.1",
     "globals": "^15.9.0",
