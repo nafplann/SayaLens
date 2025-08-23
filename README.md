@@ -4,7 +4,9 @@
 [![Electron](https://img.shields.io/badge/Electron-32.0.1-47848F?logo=electron)](https://electronjs.org)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)](https://nodejs.org)
 
-A powerful macOS system tray application for **QR code scanning** and **OCR text extraction** from screen captures. Built with Electron, this native desktop app provides seamless integration with macOS, offering quick access to scan any part of your screen.
+**Effortlessly scan QR codes and extract text from your screen.** SayaLens is a streamlined macOS system tray app that makes screen scanning simple and efficient. Instead of manually typing URLs or copying text from images, just select any area of your screen and let SayaLens do the work.
+
+Built with privacy in mind, all processing happens locally on your Mac. Whether you're capturing text from documents, scanning QR codes from presentations, or extracting information from screenshots, SayaLens provides quick, accurate results without the hassle.
 
 ![SayaLens Demo](assets/demo.gif)
 
