@@ -14338,6 +14338,8 @@ function Capture() {
       width: Math.abs(state.currentX - state.startX),
       height: Math.abs(state.currentY - state.startY)
     };
+    const menuBarHeight = 38;
+    bounds.y += menuBarHeight;
     if (bounds.width < 10 || bounds.height < 10) {
       setState((prev) => ({ ...prev, isSelecting: false }));
       return;
@@ -14345,9 +14347,14 @@ function Capture() {
     setState((prev) => ({
       ...prev,
       isSelecting: false,
-      isLoading: true,
       loadingText: state.mode === "qr" ? "Scanning QR code..." : "Extracting text..."
     }));
+    setTimeout(() => {
+      setState((prev) => ({
+        ...prev,
+        isLoading: true
+      }));
+    }, 200);
     try {
       let result;
       if (state.mode === "qr") {
@@ -14423,7 +14430,7 @@ function Capture() {
         children: coordinatesText
       }
     ),
-    state.isLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-black/90 flex items-center justify-center z-40 backdrop-blur-xl", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-black/90 text-white px-10 py-8 rounded-xl text-center backdrop-blur-xl", children: [
+    state.isLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 flex items-center justify-center z-40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-black/90 text-white px-10 py-8 rounded-xl text-center backdrop-blur-xl", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-10 h-10 mx-auto mb-4 animate-spin text-blue-500" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-lg", children: state.loadingText })
     ] }) })
@@ -17710,7 +17717,7 @@ function Result() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
-              src: resultData.capturedImage.startsWith("data:") ? resultData.capturedImage : `file://${resultData.capturedImage}`,
+              src: resultData.capturedImage.startsWith("data:") ? resultData.capturedImage : `media://${resultData.capturedImage}`,
               alt: "Captured area",
               className: "max-w-full max-h-32 border border-gray-200 rounded-md shadow-sm mx-auto",
               onError: (e) => {
