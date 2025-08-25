@@ -92,9 +92,16 @@ export default function Capture() {
     setState(prev => ({
       ...prev,
       isSelecting: false,
-      isLoading: true,
       loadingText: state.mode === 'qr' ? 'Scanning QR code...' : 'Extracting text...'
     }))
+
+    // TODO: replace this ugly workaround, to delay loading wrapper to show
+    setTimeout(() => {
+      setState(prev => ({
+        ...prev,
+        isLoading: true
+      }));
+    }, 200);
 
     try {
       let result
@@ -194,7 +201,7 @@ export default function Capture() {
 
       {/* Loading overlay */}
       {state.isLoading && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-40 backdrop-blur-xl">
+        <div className="fixed inset-0 flex items-center justify-center z-40">
           <div className="bg-black/90 text-white px-10 py-8 rounded-xl text-center backdrop-blur-xl">
             <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin text-blue-500" />
             <div className="text-lg">{state.loadingText}</div>
