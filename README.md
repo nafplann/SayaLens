@@ -2,25 +2,38 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Electron](https://img.shields.io/badge/Electron-32.0.1-47848F?logo=electron)](https://electronjs.org)
+[![React](https://img.shields.io/badge/React-19.1.1-61DAFB?logo=react)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-3178C6?logo=typescript)](https://typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-7.1.3-646CFF?logo=vite)](https://vitejs.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)](https://nodejs.org)
 
 **Effortlessly scan QR codes and extract text from your screen.** SayaLens is a streamlined macOS system tray app that makes screen scanning simple and efficient. Instead of manually typing URLs or copying text from images, just select any area of your screen and let SayaLens do the work.
 
 Built with privacy in mind, all processing happens locally on your Mac. Whether you're capturing text from documents, scanning QR codes from presentations, or extracting information from screenshots, SayaLens provides quick, accurate results without the hassle.
 
-![SayaLens Demo](assets/demo.gif)
+![SayaLens Demo](resources/demo.gif)
 
 ## ✨ Features
 
 - 🔍 **QR Code Scanning**: Quickly scan QR codes from any part of your screen
 - 📝 **OCR Text Extraction**: Extract text from images with high accuracy
-- 🖥️ **Screen Area Selection**: Intuitive drag-to-select interface
+- 🖥️ **Screen Area Selection**: Intuitive drag-to-select interface with React UI
 - 🍎 **Native macOS Integration**: Lives in your system tray for instant access
 - 📋 **Clipboard Integration**: Automatically copy results to clipboard
 - 🔐 **Privacy First**: All processing happens locally on your device
-- ⚡ **Fast Processing**: Optimized for quick results
-- 🎨 **Beautiful UI**: Modern, native-looking interface
+- ⚡ **Fast Processing**: Optimized with electron-vite for quick results
+- 🎨 **Beautiful UI**: Modern shadcn/ui components with Tailwind CSS
 - 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to macOS appearance
+- 🔷 **TypeScript**: Full type safety and better development experience
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Electron](https://electronjs.org/) with [electron-vite](https://electron-vite.org/)
+- **Frontend**: [React 19](https://react.dev/) with [TypeScript](https://typescriptlang.org/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) with [Tailwind CSS](https://tailwindcss.com/)
+- **OCR Engine**: [Tesseract.js](https://github.com/naptha/tesseract.js)
+- **QR Scanner**: [jsQR](https://github.com/cozmo/jsQR)
+- **Image Processing**: [Sharp](https://github.com/lovell/sharp)
 
 ## ☕ Support
 
@@ -65,6 +78,13 @@ If you find SayaLens useful, consider supporting the development:
    npm run build
    ```
 
+5. **Create distributable packages**
+   ```bash
+   yarn dist
+   # or
+   npm run dist
+   ```
+
 ## 📖 Usage
 
 ### Getting Started
@@ -81,53 +101,91 @@ If you find SayaLens useful, consider supporting the development:
 1. Click the **SayaLens** icon in your menu bar
 2. Select **"Scan QR"**
 3. Drag to select the area containing the QR code
-4. Release to scan - the result will be displayed and copied to your clipboard
+4. Release to scan - the result will be displayed in a modern React UI and copied to your clipboard
 
 ### Extracting Text (OCR)
 
 1. Click the **SayaLens** icon in your menu bar
 2. Select **"Capture Text"**
 3. Drag to select the text area
-4. Release to extract - the text will be displayed with confidence score
+4. Release to extract - the text will be displayed with confidence score in a beautiful interface
 
 ### Keyboard Shortcuts
 
 - **Escape**: Cancel current selection
-- **Cmd+C**: Copy result to clipboard (when result window is open)
+- **Click Copy**: Copy result to clipboard (in the result window)
 
 ## 🛠️ Development
+
+### Available Scripts
+
+- `yarn dev` - Start development server with hot reload
+- `yarn build` - Build the app for production
+- `yarn preview` - Preview the built app
+- `yarn typecheck` - Run TypeScript type checking
+- `yarn pack` - Package the app without publishing
+- `yarn dist` - Build and create distributable packages
+- `yarn test` - Run unit tests
+- `yarn test:watch` - Run tests in watch mode
+- `yarn test:coverage` - Run tests with coverage report
 
 ### Project Structure
 
 ```
 src/
-├── main.js              # Main Electron process
-├── preload.js           # Preload script for secure IPC
-├── capture.html         # Screen capture UI
-├── result.html          # Results display UI
-└── modules/
-    ├── ocrProcessor.js  # OCR text extraction
-    ├── qrScanner.js     # QR code scanning
-    └── screenCapture.js # Screen capture functionality
+├── main/                    # Main Electron process (TypeScript)
+│   ├── index.ts            # Main entry point
+│   └── modules/            # Core functionality modules
+│       ├── ocrProcessor.ts  # OCR text extraction
+│       ├── qrScanner.ts     # QR code scanning
+│       └── screenCapture.ts # Screen capture functionality
+├── preload/                # Preload scripts (TypeScript)
+│   └── index.ts           # Secure IPC bridge
+└── renderer/               # React frontend
+    ├── index.html          # HTML entry point
+    └── src/
+        ├── main.tsx        # React app entry point
+        ├── pages/          # React pages/components
+        │   ├── Capture.tsx # Screen capture interface
+        │   └── Result.tsx  # Results display
+        ├── components/     # Reusable React components
+        │   └── ui/         # shadcn/ui components
+        ├── lib/            # Utilities and helpers
+        ├── assets/         # CSS and other assets
+        └── types/          # TypeScript type definitions
 
-tests/
-└── modules/             # Unit tests for each module
+resources/                  # App assets
+├── appicon.png            # Application icon
+├── tray-icon-light.png    # Tray icon for light mode
+└── tray-icon-dark.png     # Tray icon for dark mode
 
-assets/
-├── icon.png                # Application icon
-├── tray-icon-light.png     # Tray icon for light mode (dark icon)
-└── tray-icon-dark.png      # Tray icon for dark mode (light icon)
+tests/                     # Unit tests
+└── modules/              # Tests for core modules
+
+Configuration files:
+├── electron.vite.config.ts # electron-vite configuration
+├── tsconfig.json          # TypeScript configuration
+├── tailwind.config.js     # Tailwind CSS configuration
+└── postcss.config.js      # PostCSS configuration
 ```
 
 ### Architecture Overview
 
-The application follows a modular architecture:
+The application follows a modern Electron + React architecture with TypeScript:
 
-- **Main Process** (`main.js`): Manages tray icon, windows, and IPC communication
-- **Screen Capture** (`screenCapture.js`): Handles screen recording permissions and image capture
-- **QR Scanner** (`qrScanner.js`): Processes images to detect and decode QR codes
-- **OCR Processor** (`ocrProcessor.js`): Extracts text from images using Tesseract.js
-- **UI Components**: HTML/CSS/JS for capture interface and results display
+- **Main Process** (`src/main/index.ts`): Manages tray icon, windows, and IPC communication
+- **Preload Scripts** (`src/preload/index.ts`): Provides secure IPC bridge between main and renderer
+- **React Frontend** (`src/renderer/`): Modern React UI with shadcn/ui components
+- **Core Modules** (`src/main/modules/`): Business logic for screen capture, OCR, and QR scanning
+- **Type Safety**: Full TypeScript coverage for better development experience
+
+#### Key Technologies:
+
+- **electron-vite**: Fast build tool optimized for Electron apps
+- **React 19**: Latest React with modern patterns
+- **shadcn/ui**: Beautiful, accessible UI components
+- **Tailwind CSS**: Utility-first CSS framework
+- **TypeScript**: Type safety throughout the application
 
 ## 🔧 Configuration
 
@@ -135,8 +193,8 @@ The application follows a modular architecture:
 
 The OCR processor uses English language models by default. To modify:
 
-```javascript
-// In ocrProcessor.js
+```typescript
+// In src/main/modules/ocrProcessor.ts
 this.worker = await createWorker('eng'); // Change language code here
 ```
 
@@ -144,30 +202,54 @@ Supported languages include: `eng`, `fra`, `deu`, `spa`, `chi_sim`, `chi_tra`, e
 
 ### Build Configuration
 
-Electron Builder configuration in `package.json`:
+electron-vite configuration in `electron.vite.config.ts`:
 
-```json
-{
-  "build": {
-    "appId": "com.trayscanners.app",
-    "productName": "SayaLens",
-    "mac": {
-      "target": "dmg",
-      "category": "public.app-category.utilities",
-      "darkModeSupport": true
-    }
+```typescript
+export default defineConfig({
+  main: {
+    plugins: [externalizeDepsPlugin()],
+  },
+  preload: {
+    plugins: [externalizeDepsPlugin()],
+  },
+  renderer: {
+    resolve: {
+      alias: {
+        '@renderer': resolve('src/renderer/src')
+      }
+    },
+    plugins: [react()],
   }
+})
+```
+
+### UI Customization
+
+The app uses shadcn/ui components with Tailwind CSS. Customize the theme in `tailwind.config.js`:
+
+```javascript
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        // Customize your color palette
+        primary: "hsl(var(--primary))",
+        secondary: "hsl(var(--secondary))",
+        // ...
+      },
+    },
+  },
 }
 ```
 
 ### Tray Icon Assets
 
-For proper dark/light mode support on macOS, you need to provide two tray icon files in the `assets/` directory:
+For proper dark/light mode support on macOS, provide two tray icon files in the `resources/` directory:
 
 - **`tray-icon-light.png`**: Dark icon for light mode (16x16px or 32x32px recommended)
 - **`tray-icon-dark.png`**: Light icon for dark mode (16x16px or 32x32px recommended)
 
-The application will automatically switch between these icons based on the system appearance setting. If these files are missing, a fallback icon will be used.
+The application automatically switches between these icons based on the system appearance setting.
 
 **Icon Guidelines:**
 - Use simple, monochromatic designs
@@ -179,8 +261,9 @@ The application will automatically switch between these icons based on the syste
 
 - **Local Processing**: All OCR and QR scanning happens locally on your device
 - **No Data Transmission**: No captured images or extracted data leaves your computer
-- **Secure IPC**: Uses Electron's context isolation for secure communication
+- **Secure IPC**: Uses Electron's context isolation with TypeScript for secure communication
 - **Permission-Based**: Requires explicit screen recording permission from user
+- **Type Safety**: TypeScript helps prevent runtime security issues
 
 ## 🐛 Troubleshooting
 
@@ -193,6 +276,16 @@ The application will automatically switch between these icons based on the syste
 2. Go to Privacy & Security → Screen Recording  
 3. Add SayaLens and enable it
 4. Restart the application
+
+### Development Issues
+
+**Problem**: Build or development server fails
+
+**Solutions**:
+- Ensure Node.js version is 18+
+- Run `yarn install` to ensure all dependencies are installed
+- Check that all TypeScript files compile with `yarn typecheck`
+- Clear node_modules and yarn.lock, then reinstall dependencies
 
 ### OCR Accuracy Issues
 
@@ -212,13 +305,15 @@ The application will automatically switch between these icons based on the syste
 - Restart the application to clear memory
 - Ensure your Mac meets minimum system requirements
 - Close other resource-intensive applications
+- electron-vite provides faster builds and hot reload in development
 
 ## 📋 System Requirements
 
 - **OS**: macOS 10.15 (Catalina) or later
-- **Memory**: 100MB RAM minimum
-- **Disk Space**: 200MB for installation
+- **Memory**: 150MB RAM minimum (React + Electron)
+- **Disk Space**: 250MB for installation
 - **Permissions**: Screen Recording access required
+- **Development**: Node.js 18+, Yarn (recommended)
 
 ## 🤝 Contributing
 
@@ -226,16 +321,28 @@ The application will automatically switch between these icons based on the syste
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Add tests for new functionality
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+5. Run type checking (`yarn typecheck`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
 ### Development Guidelines
 
 - Follow existing code style and patterns
+- Use TypeScript for type safety
+- Follow React best practices and hooks patterns
+- Use shadcn/ui components when possible
 - Add unit tests for new features
 - Update documentation for user-facing changes
 - Test on multiple macOS versions when possible
+
+### Code Style
+
+- TypeScript with strict mode enabled
+- React functional components with hooks
+- Tailwind CSS for styling
+- ESLint for code linting
+- Prefer composition over inheritance
 
 ## 📄 License
 
@@ -243,11 +350,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- [electron-vite](https://electron-vite.org/) - Fast build tool for Electron apps
+- [React](https://react.dev/) - UI framework
+- [shadcn/ui](https://ui.shadcn.com/) - Beautiful UI components
+- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
 - [Tesseract.js](https://github.com/naptha/tesseract.js) - OCR functionality
 - [jsQR](https://github.com/cozmo/jsQR) - QR code detection
 - [Sharp](https://github.com/lovell/sharp) - Image processing
 - [Electron](https://electronjs.org/) - Cross-platform desktop framework
+- [TypeScript](https://typescriptlang.org/) - Type safety
 
 ---
 
-**Made with ❤️ for macOS users who need quick access to screen scanning tools.**
+**Made with ❤️ for macOS users who need quick access to modern screen scanning tools.**
