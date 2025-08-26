@@ -453,6 +453,11 @@ After enabling the permission, try again.`,
         this.resultWindow = null;
       }
     });
+    electron.ipcMain.on("adjust-window-height", () => {
+      setTimeout(() => {
+        this.adjustWindowHeight();
+      }, 100);
+    });
   }
   async startQRScan() {
     this.createCaptureWindow("qr");
@@ -504,11 +509,18 @@ After enabling the permission, try again.`,
     console.log("Creating result window");
     this.resultWindow = new electron.BrowserWindow({
       width: 720,
-      height: 640,
-      resizable: false,
+      height: 400,
+      // Start with smaller height
+      minWidth: 600,
+      minHeight: 300,
+      maxHeight: 1e3,
+      // Set reasonable max height
+      resizable: true,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
+      show: false,
+      // Don't show until content is loaded
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -522,10 +534,44 @@ After enabling the permission, try again.`,
     }
     this.resultWindow.webContents.once("did-finish-load", () => {
       this.resultWindow?.webContents.send("show-data", data);
+      setTimeout(() => {
+        this.adjustWindowHeight();
+      }, 200);
     });
     this.resultWindow.on("closed", () => {
       this.resultWindow = null;
     });
+  }
+  async adjustWindowHeight() {
+    if (!this.resultWindow) return;
+    try {
+      const contentHeight = await this.resultWindow.webContents.executeJavaScript(`
+        (() => {
+          const body = document.body;
+          const html = document.documentElement;
+          
+          // Get the actual content height
+          const height = Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight
+          );
+          
+          return Math.min(height + 60, 1000); // Add some padding, max 1000px
+        })()
+      `);
+      const [currentWidth] = this.resultWindow.getContentSize();
+      const newHeight = Math.max(Math.min(contentHeight, 1e3), 300);
+      this.resultWindow.setContentSize(currentWidth, newHeight);
+      this.resultWindow.center();
+      this.resultWindow.show();
+      console.log(`Adjusted window height to: ${newHeight}px`);
+    } catch (error) {
+      console.error("Failed to adjust window height:", error);
+      this.resultWindow.show();
+    }
   }
 }
 const trayScanner = new TrayScanner();
