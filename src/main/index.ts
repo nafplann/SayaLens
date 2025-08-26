@@ -40,6 +40,7 @@ class TrayScanner {
   private ocrProcessor: OCRProcessor | null = null
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
+  private storedLanguage: string = 'eng'
 
   async init(): Promise<void> {
     // Initialize modules
@@ -278,6 +279,8 @@ class TrayScanner {
     ipcMain.handle('set-ocr-language', async (_event, language: string) => {
       try {
         await this.ocrProcessor?.setLanguage(language)
+        this.storedLanguage = language
+        console.log(`OCR language set and stored: ${language}`)
         return { success: true }
       } catch (error) {
         console.error('Failed to set OCR language:', error)
@@ -300,6 +303,34 @@ class TrayScanner {
           success: false,
           error: (error as Error).message
         } as CaptureResult
+      }
+    })
+
+    ipcMain.handle('get-stored-language', async () => {
+      try {
+        // Return the stored language preference
+        return {
+          success: true,
+          language: this.storedLanguage
+        }
+      } catch (error) {
+        console.error('Failed to get stored language:', error)
+        return {
+          success: false,
+          language: 'eng'
+        }
+      }
+    })
+
+    ipcMain.handle('sync-language-preference', async (_event, language: string) => {
+      try {
+        // Sync the language preference from renderer to main process
+        this.storedLanguage = language
+        console.log(`Language preference synced: ${language}`)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to sync language preference:', error)
+        return { success: false, error: (error as Error).message }
       }
     })
 
@@ -327,6 +358,20 @@ class TrayScanner {
   }
 
   private async startOCR(): Promise<void> {
+    // Ensure OCR processor uses the stored language preference
+    try {
+      const currentLanguage = this.ocrProcessor?.getCurrentLanguage() || 'eng'
+      
+      if (this.storedLanguage !== currentLanguage) {
+        console.log(`Updating OCR language to stored preference: ${this.storedLanguage}`)
+        await this.ocrProcessor?.setLanguage(this.storedLanguage)
+      } else {
+        console.log(`Starting OCR with language: ${this.storedLanguage}`)
+      }
+    } catch (error) {
+      console.warn('Error setting stored language for OCR:', error)
+    }
+    
     this.createCaptureWindow('ocr')
   }
 

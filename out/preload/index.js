@@ -89,11 +89,12 @@ const api = {
   copyToClipboard: (text) => electron.ipcRenderer.invoke("copy-to-clipboard", text),
   setOCRLanguage: (language) => electron.ipcRenderer.invoke("set-ocr-language", language),
   reprocessOCR: (imagePath) => electron.ipcRenderer.invoke("reprocess-ocr", imagePath),
+  getStoredLanguage: () => electron.ipcRenderer.invoke("get-stored-language"),
+  syncLanguagePreference: (language) => electron.ipcRenderer.invoke("sync-language-preference", language),
   // Window management
   captureComplete: () => electron.ipcRenderer.send("capture-complete"),
   showResult: (data) => electron.ipcRenderer.send("show-result", data),
   closeResult: () => electron.ipcRenderer.send("close-result"),
-  adjustWindowHeight: () => electron.ipcRenderer.send("adjust-window-height"),
   // Event listeners
   onInitCapture: (callback) => electron.ipcRenderer.on("init-capture", callback),
   onShowData: (callback) => electron.ipcRenderer.on("show-data", callback),

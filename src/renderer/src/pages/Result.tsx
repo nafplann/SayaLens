@@ -35,7 +35,10 @@ const languages = [
 export default function OCRResultPage() {
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [copied, setCopied] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('eng');
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    // Load saved language preference or default to English
+    return localStorage.getItem('ocr-language') || 'eng';
+  });
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -47,12 +50,23 @@ export default function OCRResultPage() {
       })
     }
 
+    // Sync the stored language preference with the main process
+    const syncLanguage = async () => {
+      try {
+        await window.api?.syncLanguagePreference(selectedLanguage)
+        console.log(`Language preference synced with main process: ${selectedLanguage}`)
+      } catch (error) {
+        console.error('Failed to sync language preference:', error)
+      }
+    }
+    syncLanguage()
+
     return () => {
       if (window.api?.removeAllListeners) {
         window.api.removeAllListeners('show-data')
       }
     }
-  }, [])
+  }, [selectedLanguage])
 
   useEffect(() => {
     const changeLanguageAndReprocess = async () => {
@@ -126,6 +140,12 @@ export default function OCRResultPage() {
 
     changeLanguageAndReprocess()
   }, [selectedLanguage, resultData?.capturedImage, isInitialLoad])
+
+  // Save language preference whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ocr-language', selectedLanguage)
+    console.log(`Language preference saved: ${selectedLanguage}`)
+  }, [selectedLanguage])
 
   const handleClose = () => {
     window.api?.closeResult()

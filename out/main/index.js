@@ -224,6 +224,7 @@ class TrayScanner {
   ocrProcessor = null;
   captureWindow = null;
   resultWindow = null;
+  storedLanguage = "eng";
   async init() {
     this.screenCapture = new ScreenCapture();
     this.qrScanner = new QRScanner();
@@ -416,6 +417,8 @@ After enabling the permission, try again.`,
     electron.ipcMain.handle("set-ocr-language", async (_event, language) => {
       try {
         await this.ocrProcessor?.setLanguage(language);
+        this.storedLanguage = language;
+        console.log(`OCR language set and stored: ${language}`);
         return { success: true };
       } catch (error) {
         console.error("Failed to set OCR language:", error);
@@ -438,6 +441,30 @@ After enabling the permission, try again.`,
         };
       }
     });
+    electron.ipcMain.handle("get-stored-language", async () => {
+      try {
+        return {
+          success: true,
+          language: this.storedLanguage
+        };
+      } catch (error) {
+        console.error("Failed to get stored language:", error);
+        return {
+          success: false,
+          language: "eng"
+        };
+      }
+    });
+    electron.ipcMain.handle("sync-language-preference", async (_event, language) => {
+      try {
+        this.storedLanguage = language;
+        console.log(`Language preference synced: ${language}`);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to sync language preference:", error);
+        return { success: false, error: error.message };
+      }
+    });
     electron.ipcMain.on("capture-complete", () => {
       if (this.captureWindow) {
         this.captureWindow.close();
@@ -453,16 +480,22 @@ After enabling the permission, try again.`,
         this.resultWindow = null;
       }
     });
-    electron.ipcMain.on("adjust-window-height", () => {
-      setTimeout(() => {
-        this.adjustWindowHeight();
-      }, 100);
-    });
   }
   async startQRScan() {
     this.createCaptureWindow("qr");
   }
   async startOCR() {
+    try {
+      const currentLanguage = this.ocrProcessor?.getCurrentLanguage() || "eng";
+      if (this.storedLanguage !== currentLanguage) {
+        console.log(`Updating OCR language to stored preference: ${this.storedLanguage}`);
+        await this.ocrProcessor?.setLanguage(this.storedLanguage);
+      } else {
+        console.log(`Starting OCR with language: ${this.storedLanguage}`);
+      }
+    } catch (error) {
+      console.warn("Error setting stored language for OCR:", error);
+    }
     this.createCaptureWindow("ocr");
   }
   createCaptureWindow(mode) {
@@ -509,18 +542,11 @@ After enabling the permission, try again.`,
     console.log("Creating result window");
     this.resultWindow = new electron.BrowserWindow({
       width: 720,
-      height: 400,
-      // Start with smaller height
-      minWidth: 600,
-      minHeight: 300,
-      maxHeight: 1e3,
-      // Set reasonable max height
-      resizable: true,
+      height: 640,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
-      show: false,
-      // Don't show until content is loaded
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -534,44 +560,10 @@ After enabling the permission, try again.`,
     }
     this.resultWindow.webContents.once("did-finish-load", () => {
       this.resultWindow?.webContents.send("show-data", data);
-      setTimeout(() => {
-        this.adjustWindowHeight();
-      }, 200);
     });
     this.resultWindow.on("closed", () => {
       this.resultWindow = null;
     });
-  }
-  async adjustWindowHeight() {
-    if (!this.resultWindow) return;
-    try {
-      const contentHeight = await this.resultWindow.webContents.executeJavaScript(`
-        (() => {
-          const body = document.body;
-          const html = document.documentElement;
-          
-          // Get the actual content height
-          const height = Math.max(
-            body.scrollHeight,
-            body.offsetHeight,
-            html.clientHeight,
-            html.scrollHeight,
-            html.offsetHeight
-          );
-          
-          return Math.min(height + 60, 1000); // Add some padding, max 1000px
-        })()
-      `);
-      const [currentWidth] = this.resultWindow.getContentSize();
-      const newHeight = Math.max(Math.min(contentHeight, 1e3), 300);
-      this.resultWindow.setContentSize(currentWidth, newHeight);
-      this.resultWindow.center();
-      this.resultWindow.show();
-      console.log(`Adjusted window height to: ${newHeight}px`);
-    } catch (error) {
-      console.error("Failed to adjust window height:", error);
-      this.resultWindow.show();
-    }
   }
 }
 const trayScanner = new TrayScanner();
