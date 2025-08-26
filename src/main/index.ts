@@ -275,6 +275,34 @@ class TrayScanner {
       clipboard.writeText(text)
     })
 
+    ipcMain.handle('set-ocr-language', async (_event, language: string) => {
+      try {
+        await this.ocrProcessor?.setLanguage(language)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to set OCR language:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('reprocess-ocr', async (_event, imagePath: string) => {
+      try {
+        console.log('Reprocessing OCR with new language for image:', imagePath)
+        const ocrResult = await this.ocrProcessor?.extractText(imagePath)
+        
+        return {
+          ...ocrResult,
+          capturedImage: imagePath
+        }
+      } catch (error) {
+        console.error('OCR reprocessing failed:', error)
+        return {
+          success: false,
+          error: (error as Error).message
+        } as CaptureResult
+      }
+    })
+
     ipcMain.on('capture-complete', () => {
       if (this.captureWindow) {
         this.captureWindow.close()
@@ -358,11 +386,15 @@ class TrayScanner {
 
     this.resultWindow = new BrowserWindow({
       width: 720,
-      height: 640,
-      resizable: false,
+      height: 400, // Start with smaller height
+      minWidth: 600,
+      minHeight: 300,
+      maxHeight: 1000, // Set reasonable max height
+      resizable: true,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
+      show: false, // Don't show until content is loaded
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -378,12 +410,62 @@ class TrayScanner {
     }
 
     this.resultWindow.webContents.once('did-finish-load', () => {
+      // Send data first
       this.resultWindow?.webContents.send('show-data', data)
+      
+      // Wait a bit for React to render, then adjust window size and show
+      setTimeout(() => {
+        this.adjustWindowHeight()
+      }, 100)
     })
 
     this.resultWindow.on('closed', () => {
       this.resultWindow = null
     })
+  }
+
+  private async adjustWindowHeight(): Promise<void> {
+    if (!this.resultWindow) return
+
+    try {
+      // Get the content height from the renderer
+      const contentHeight = await this.resultWindow.webContents.executeJavaScript(`
+        (() => {
+          const body = document.body;
+          const html = document.documentElement;
+          
+          // Get the actual content height
+          const height = Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight
+          );
+          
+          return Math.min(height + 60, 1000); // Add some padding, max 1000px
+        })()
+      `)
+
+      // Get current window size
+      const [currentWidth] = this.resultWindow.getContentSize()
+      
+      // Set new size with calculated height
+      const newHeight = Math.max(Math.min(contentHeight, 1000), 300) // Min 300, max 1000
+      this.resultWindow.setContentSize(currentWidth, newHeight)
+      
+      // Center the window after resizing
+      this.resultWindow.center()
+      
+      // Now show the window
+      this.resultWindow.show()
+      
+      console.log(`Adjusted window height to: ${newHeight}px`)
+    } catch (error) {
+      console.error('Failed to adjust window height:', error)
+      // Fallback: just show the window with default size
+      this.resultWindow.show()
+    }
   }
 }
 

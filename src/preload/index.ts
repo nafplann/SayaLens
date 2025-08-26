@@ -14,6 +14,8 @@ const api = {
   
   // Utility functions
   copyToClipboard: (text: string) => ipcRenderer.invoke('copy-to-clipboard', text),
+  setOCRLanguage: (language: string) => ipcRenderer.invoke('set-ocr-language', language),
+  reprocessOCR: (imagePath: string) => ipcRenderer.invoke('reprocess-ocr', imagePath),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),

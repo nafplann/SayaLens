@@ -42,6 +42,8 @@ export default function OCRResultPage() {
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [copied, setCopied] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('eng');
+  const [isReprocessing, setIsReprocessing] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (window.api?.onShowData) {
@@ -57,6 +59,79 @@ export default function OCRResultPage() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const changeLanguageAndReprocess = async () => {
+      if (!resultData) return;
+
+      // On initial load, just set the language without reprocessing
+      if (isInitialLoad) {
+        try {
+          const languageResult = await window.api?.setOCRLanguage(selectedLanguage)
+          if (languageResult && !languageResult.success) {
+            console.error('Failed to set initial OCR language:', languageResult.error)
+          } else {
+            console.log(`Initial OCR language set to: ${selectedLanguage}`)
+          }
+        } catch (error) {
+          console.error('Error setting initial OCR language:', error)
+        }
+        setIsInitialLoad(false)
+        return
+      }
+
+      const isOCRMode = resultData.mode === 'ocr' || (!resultData.mode && !resultData.data)
+      
+      try {
+        // First, change the language
+        const languageResult = await window.api?.setOCRLanguage(selectedLanguage)
+        if (languageResult && !languageResult.success) {
+          console.error('Failed to change OCR language:', languageResult.error)
+          return
+        }
+        console.log(`OCR language changed to: ${selectedLanguage}`)
+
+        // If we have a captured image and it's OCR mode, reprocess it
+        if (isOCRMode && resultData.capturedImage) {
+          setIsReprocessing(true)
+          
+          // Extract the actual file path from the captured image
+          let imagePath = resultData.capturedImage
+          if (imagePath.startsWith('data:image/png;base64,')) {
+            // Skip reprocessing for base64 images (QR mode)
+            setIsReprocessing(false)
+            return
+          }
+          if (imagePath.startsWith('media://')) {
+            imagePath = imagePath.replace('media://', '')
+          }
+
+          console.log('Reprocessing image with new language:', imagePath)
+          const reprocessResult = await window.api?.reprocessOCR(imagePath)
+          
+          if (reprocessResult && reprocessResult.success) {
+            // Update the result data with new OCR results
+            setResultData(prev => prev ? {
+              ...prev,
+              text: reprocessResult.text,
+              confidence: reprocessResult.confidence,
+              success: reprocessResult.success
+            } : null)
+            console.log('Reprocessing completed successfully')
+          } else {
+            console.error('Reprocessing failed:', reprocessResult?.error)
+          }
+          
+          setIsReprocessing(false)
+        }
+      } catch (error) {
+        console.error('Error during language change and reprocessing:', error)
+        setIsReprocessing(false)
+      }
+    }
+
+    changeLanguageAndReprocess()
+  }, [selectedLanguage, resultData?.capturedImage, isInitialLoad])
 
   const handleClose = () => {
     window.api?.closeResult()
@@ -109,10 +184,15 @@ export default function OCRResultPage() {
                   <div className="flex items-center">
                     {getIcon()}
                     <span className="pl-2">{getTitle()}</span>
+                    {isReprocessing && (
+                      <span className="ml-2 text-sm text-blue-600 animate-pulse">
+                        (Processing...)
+                      </span>
+                    )}
                   </div>
                   <div className="flex">
                     {!isQRMode && (
-                      <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                      <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isReprocessing}>
                         <SelectTrigger className="w-40 h-8 text-xs">
                           <SelectValue placeholder="Language" />
                         </SelectTrigger>

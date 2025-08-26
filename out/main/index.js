@@ -136,6 +136,7 @@ class QRScanner {
 }
 class OCRProcessor {
   worker = null;
+  currentLanguage = "eng";
   /**
    * Creates an OCRProcessor instance
    */
@@ -150,9 +151,31 @@ class OCRProcessor {
    */
   async initWorker() {
     if (!this.worker) {
-      this.worker = await tesseract_js.createWorker("eng");
+      this.worker = await tesseract_js.createWorker(this.currentLanguage);
     }
     return this.worker;
+  }
+  /**
+   * Changes the OCR language and reinitializes the worker
+   * @param language - The language code (e.g., 'eng', 'jpn', 'fra')
+   */
+  async setLanguage(language) {
+    if (this.currentLanguage === language) {
+      return;
+    }
+    if (this.worker) {
+      await this.worker.terminate();
+      this.worker = null;
+    }
+    this.currentLanguage = language;
+    await this.initWorker();
+  }
+  /**
+   * Gets the current language being used for OCR
+   * @returns The current language code
+   */
+  getCurrentLanguage() {
+    return this.currentLanguage;
   }
   /**
    * Extracts text from an image file using OCR
@@ -390,6 +413,31 @@ After enabling the permission, try again.`,
     electron.ipcMain.handle("copy-to-clipboard", (_event, text) => {
       electron.clipboard.writeText(text);
     });
+    electron.ipcMain.handle("set-ocr-language", async (_event, language) => {
+      try {
+        await this.ocrProcessor?.setLanguage(language);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to set OCR language:", error);
+        return { success: false, error: error.message };
+      }
+    });
+    electron.ipcMain.handle("reprocess-ocr", async (_event, imagePath) => {
+      try {
+        console.log("Reprocessing OCR with new language for image:", imagePath);
+        const ocrResult = await this.ocrProcessor?.extractText(imagePath);
+        return {
+          ...ocrResult,
+          capturedImage: imagePath
+        };
+      } catch (error) {
+        console.error("OCR reprocessing failed:", error);
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+    });
     electron.ipcMain.on("capture-complete", () => {
       if (this.captureWindow) {
         this.captureWindow.close();
@@ -457,7 +505,7 @@ After enabling the permission, try again.`,
     this.resultWindow = new electron.BrowserWindow({
       width: 720,
       height: 640,
-      resizable: true,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
