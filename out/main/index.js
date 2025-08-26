@@ -455,8 +455,8 @@ After enabling the permission, try again.`,
   showResult(data) {
     console.log("Creating result window");
     this.resultWindow = new electron.BrowserWindow({
-      width: 400,
-      height: 500,
+      width: 720,
+      height: 640,
       resizable: true,
       minimizable: false,
       maximizable: false,

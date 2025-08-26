@@ -357,9 +357,9 @@ class TrayScanner {
     console.log('Creating result window')
 
     this.resultWindow = new BrowserWindow({
-      width: 400,
-      height: 500,
-      resizable: true,
+      width: 720,
+      height: 640,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
