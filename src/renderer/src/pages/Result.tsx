@@ -17,25 +17,19 @@ interface ResultData {
 
 const languages = [
   { code: 'eng', name: 'English' },
-  // { code: 'es', name: 'Spanish' },
-  // { code: 'fr', name: 'French' },
-  // { code: 'de', name: 'German' },
-  // { code: 'it', name: 'Italian' },
-  // { code: 'pt', name: 'Portuguese' },
-  // { code: 'ru', name: 'Russian' },
+  { code: 'ara', name: 'Arabic' },
+  { code: 'chi_sim', name: 'Chinese' },
+  { code: 'fra', name: 'French' },
+  { code: 'deu', name: 'German' },
+  { code: 'hin', name: 'Hindi' },
+  { code: 'ita', name: 'Italian' },
   { code: 'jpn', name: 'Japanese' },
-  // { code: 'ko', name: 'Korean' },
-  // { code: 'zh', name: 'Chinese (Simplified)' },
-  // { code: 'ar', name: 'Arabic' },
-  // { code: 'hi', name: 'Hindi' },
-  // { code: 'th', name: 'Thai' },
-  // { code: 'vi', name: 'Vietnamese' },
-  // { code: 'nl', name: 'Dutch' },
-  // { code: 'sv', name: 'Swedish' },
-  // { code: 'da', name: 'Danish' },
-  // { code: 'no', name: 'Norwegian' },
-  // { code: 'fi', name: 'Finnish' },
-  // { code: 'pl', name: 'Polish' }
+  { code: 'kor', name: 'Korean' },
+  { code: 'por', name: 'Portuguese' },
+  { code: 'rus', name: 'Russian' },
+  { code: 'spa', name: 'Spanish' },
+  { code: 'tha', name: 'Thai' },
+  { code: 'vie', name: 'Vietnamese' },
 ];
 
 export default function OCRResultPage() {

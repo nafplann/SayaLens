@@ -24,3 +24,6 @@ coverage
 *.sln
 *.sw?
 .env
+
+# Tesseract lang datasets
+*.traineddata
