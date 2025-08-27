@@ -91,6 +91,7 @@ const api = {
   reprocessOCR: (imagePath) => electron.ipcRenderer.invoke("reprocess-ocr", imagePath),
   getStoredLanguage: () => electron.ipcRenderer.invoke("get-stored-language"),
   syncLanguagePreference: (language) => electron.ipcRenderer.invoke("sync-language-preference", language),
+  openExternalUrl: (url) => electron.ipcRenderer.invoke("open-external-url", url),
   // Window management
   captureComplete: () => electron.ipcRenderer.send("capture-complete"),
   showResult: (data) => electron.ipcRenderer.send("show-result", data),

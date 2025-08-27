@@ -14,7 +14,6 @@ import {
   shell,
   protocol,
   net,
-  Notification,
 } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
@@ -41,6 +40,7 @@ class TrayScanner {
   private ocrProcessor: OCRProcessor | null = null
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
+  private aboutWindow: BrowserWindow | null = null
   private storedLanguage: string = 'eng'
 
   async init(): Promise<void> {
@@ -182,7 +182,6 @@ class TrayScanner {
         label: `Scan QR`,
         click: () => this.startQRScan()
       },
-      { type: 'separator' },
       {
         label: 'Global Shortcuts',
         submenu: [
@@ -197,6 +196,10 @@ class TrayScanner {
         ]
       },
       { type: 'separator' },
+      {
+        label: 'About SayaLens',
+        click: () => this.showAboutWindow()
+      },
       {
         label: 'Exit',
         click: () => {
@@ -351,6 +354,16 @@ class TrayScanner {
         return { success: true }
       } catch (error) {
         console.error('Failed to sync language preference:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('open-external-url', async (_event, url: string) => {
+      try {
+        await shell.openExternal(url)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to open external URL:', error)
         return { success: false, error: (error as Error).message }
       }
     })
@@ -511,6 +524,42 @@ class TrayScanner {
 
     this.resultWindow.on('closed', () => {
       this.resultWindow = null
+    })
+  }
+
+  private showAboutWindow(): void {
+    // Don't create a new window if one already exists
+    if (this.aboutWindow) {
+      this.aboutWindow.focus()
+      return
+    }
+
+    console.log('Creating about window')
+
+    this.aboutWindow = new BrowserWindow({
+      width: 900,
+      height: 800,
+      resizable: false,
+      minimizable: false,
+      maximizable: true,
+      alwaysOnTop: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: join(__dirname, '../preload/index.js')
+      },
+      title: 'About SayaLens'
+    })
+
+    // Load the about React app
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      this.aboutWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/about')
+    } else {
+      this.aboutWindow.loadFile(join(__dirname, '../renderer/about.html'))
+    }
+
+    this.aboutWindow.on('closed', () => {
+      this.aboutWindow = null
     })
   }
 }

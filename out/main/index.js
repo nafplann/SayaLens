@@ -224,6 +224,7 @@ class TrayScanner {
   ocrProcessor = null;
   captureWindow = null;
   resultWindow = null;
+  aboutWindow = null;
   storedLanguage = "eng";
   async init() {
     this.screenCapture = new ScreenCapture();
@@ -339,7 +340,6 @@ After enabling the permission, try again.`,
         label: `Scan QR`,
         click: () => this.startQRScan()
       },
-      { type: "separator" },
       {
         label: "Global Shortcuts",
         submenu: [
@@ -354,6 +354,10 @@ After enabling the permission, try again.`,
         ]
       },
       { type: "separator" },
+      {
+        label: "About SayaLens",
+        click: () => this.showAboutWindow()
+      },
       {
         label: "Exit",
         click: () => {
@@ -481,6 +485,15 @@ After enabling the permission, try again.`,
         return { success: false, error: error.message };
       }
     });
+    electron.ipcMain.handle("open-external-url", async (_event, url) => {
+      try {
+        await electron.shell.openExternal(url);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to open external URL:", error);
+        return { success: false, error: error.message };
+      }
+    });
     electron.ipcMain.on("capture-complete", () => {
       if (this.captureWindow) {
         this.captureWindow.close();
@@ -603,6 +616,35 @@ After enabling the permission, try again.`,
     });
     this.resultWindow.on("closed", () => {
       this.resultWindow = null;
+    });
+  }
+  showAboutWindow() {
+    if (this.aboutWindow) {
+      this.aboutWindow.focus();
+      return;
+    }
+    console.log("Creating about window");
+    this.aboutWindow = new electron.BrowserWindow({
+      width: 900,
+      height: 800,
+      resizable: false,
+      minimizable: false,
+      maximizable: true,
+      alwaysOnTop: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, "../preload/index.js")
+      },
+      title: "About SayaLens"
+    });
+    if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+      this.aboutWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/about");
+    } else {
+      this.aboutWindow.loadFile(path.join(__dirname, "../renderer/about.html"));
+    }
+    this.aboutWindow.on("closed", () => {
+      this.aboutWindow = null;
     });
   }
 }

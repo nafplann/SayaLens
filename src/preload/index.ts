@@ -18,6 +18,7 @@ const api = {
   reprocessOCR: (imagePath: string) => ipcRenderer.invoke('reprocess-ocr', imagePath),
   getStoredLanguage: () => ipcRenderer.invoke('get-stored-language'),
   syncLanguagePreference: (language: string) => ipcRenderer.invoke('sync-language-preference', language),
+  openExternalUrl: (url: string) => ipcRenderer.invoke('open-external-url', url),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),
