@@ -14,7 +14,9 @@ import {
   Cpu,
   Palette
 } from 'lucide-react';
+// @ts-ignore
 import appIcon from '../../../../resources/appicon.png';
+import { Analytics } from '../lib/analytics';
 
 export default function About() {
   const features = [
@@ -23,6 +25,11 @@ export default function About() {
     { icon: Cpu, title: 'Lightweight', description: 'Minimal system resources' },
     { icon: Palette, title: 'Clean UI', description: 'Beautiful, intuitive interface' }
   ];
+
+  const handleOpenUrl = (url: string) => {
+    Analytics.urlOpened()
+    window.api.openExternalUrl(url)
+  };
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -89,7 +96,7 @@ export default function About() {
                         variant="outline"
                         className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors"
                         size="lg"
-                        onClick={() => window.api.openExternalUrl('https://buymeacoffee.com/nafplann')}
+                        onClick={() => handleOpenUrl('https://buymeacoffee.com/nafplann')}
                     >
                       <Coffee className="w-5 h-5 mr-2" />
                       Buy Me a Coffee
@@ -97,7 +104,7 @@ export default function About() {
                     <Button
                         className="w-full bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                         size="lg"
-                        onClick={() => window.api.openExternalUrl('https://github.com/nafplann')}
+                        onClick={() => handleOpenUrl('https://github.com/nafplann')}
                     >
                       <Heart className="w-5 h-5 mr-2" />
                       Sponsor on GitHub
@@ -134,7 +141,7 @@ export default function About() {
                         <p className="text-sm text-slate-600">@nafplann</p>
                       </div>
                       <Button size="sm" variant="outline" className="text-xs"
-                        onClick={() => window.api.openExternalUrl('https://github.com/nafplann')}
+                        onClick={() => handleOpenUrl('https://github.com/nafplann')}
                       >
                         Visit
                       </Button>
@@ -147,7 +154,7 @@ export default function About() {
                         <p className="text-sm text-slate-600">nafplann@gmail.com</p>
                       </div>
                       <Button size="sm" variant="outline" className="text-xs"
-                        onClick={() => window.api.openExternalUrl('mailto:nafplann@gmail.com')}>
+                        onClick={() => handleOpenUrl('mailto:nafplann@gmail.com')}>
                         Email
                       </Button>
                     </div>

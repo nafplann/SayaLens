@@ -92,6 +92,7 @@ const api = {
   getStoredLanguage: () => electron.ipcRenderer.invoke("get-stored-language"),
   syncLanguagePreference: (language) => electron.ipcRenderer.invoke("sync-language-preference", language),
   openExternalUrl: (url) => electron.ipcRenderer.invoke("open-external-url", url),
+  trackAnalyticsEvent: (eventData) => electron.ipcRenderer.invoke("track-analytics-event", eventData),
   // Window management
   captureComplete: () => electron.ipcRenderer.send("capture-complete"),
   showResult: (data) => electron.ipcRenderer.send("show-result", data),
@@ -99,6 +100,7 @@ const api = {
   // Event listeners
   onInitCapture: (callback) => electron.ipcRenderer.on("init-capture", callback),
   onShowData: (callback) => electron.ipcRenderer.on("show-data", callback),
+  onTrackAnalytics: (callback) => electron.ipcRenderer.on("track-analytics", callback),
   // Remove listeners
   removeAllListeners: (channel) => electron.ipcRenderer.removeAllListeners(channel)
 };

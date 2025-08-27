@@ -19,6 +19,8 @@ const api = {
   getStoredLanguage: () => ipcRenderer.invoke('get-stored-language'),
   syncLanguagePreference: (language: string) => ipcRenderer.invoke('sync-language-preference', language),
   openExternalUrl: (url: string) => ipcRenderer.invoke('open-external-url', url),
+  trackAnalyticsEvent: (eventData: { action: string; category: string; label?: string; value?: number }) => 
+    ipcRenderer.invoke('track-analytics-event', eventData),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),
@@ -30,6 +32,8 @@ const api = {
     ipcRenderer.on('init-capture', callback),
   onShowData: (callback: (event: any, data: any) => void) => 
     ipcRenderer.on('show-data', callback),
+  onTrackAnalytics: (callback: (event: any, data: { action: string; category: string; label?: string; value?: number }) => void) =>
+    ipcRenderer.on('track-analytics', callback),
   
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)

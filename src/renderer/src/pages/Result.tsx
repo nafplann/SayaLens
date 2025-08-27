@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
+import { Analytics } from '../lib/analytics';
 
 interface ResultData {
   success: boolean
@@ -151,11 +152,13 @@ export default function OCRResultPage() {
   useEffect(() => {
     localStorage.setItem('ocr-language', selectedLanguage)
     console.log(`Language preference saved: ${selectedLanguage}`)
+    Analytics.languageChanged(selectedLanguage)
   }, [selectedLanguage])
 
   const handleCopy = async (text: string, close: boolean) => {
     try {
       await window.api?.copyToClipboard(text)
+      Analytics.textCopied()
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (err) {
