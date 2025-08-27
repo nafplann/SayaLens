@@ -104,7 +104,7 @@ export default function About() {
                     <Button
                         className="w-full bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                         size="lg"
-                        onClick={() => handleOpenUrl('https://github.com/nafplann')}
+                        onClick={() => handleOpenUrl('https://github.com/sponsors/nafplann')}
                     >
                       <Heart className="w-5 h-5 mr-2" />
                       Sponsor on GitHub

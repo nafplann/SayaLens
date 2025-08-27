@@ -41,7 +41,7 @@ Built with privacy in mind, all processing happens locally on your Mac. Whether 
 If you find SayaLens useful, consider supporting the development:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/nafplann)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-EA4AAA.svg?logo=github&logoColor=white)](https://github.com/nafplann)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-EA4AAA.svg?logo=github&logoColor=white)](https://github.com/sponsors/nafplann)
 
 ## 🚀 Quick Start
 
