@@ -134,7 +134,11 @@ class TrayScanner {
   private getTrayIconPath(): string {
     const isDarkMode = nativeTheme.shouldUseDarkColors
     const iconName = isDarkMode ? 'tray-icon-light.png' : 'tray-icon-dark.png'
-    return join(process.cwd(), 'resources', iconName)
+    
+    // Use app.getAppPath() for production builds to get the correct application directory
+    // In development, this will point to the project root
+    // In production, this will point to the app bundle root where resources are located
+    return join(app.getAppPath(), 'resources', iconName)
   }
 
   /**
