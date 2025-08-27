@@ -20,6 +20,7 @@ import {is} from '@electron-toolkit/utils'
 import ScreenCapture from './modules/screenCapture.js'
 import QRScanner from './modules/qrScanner.js'
 import OCRProcessor from './modules/ocrProcessor.js'
+import { VersionController, VersionCheckResult } from './modules/versionControl.js'
 import {tmpdir} from 'node:os'
 import {writeFileSync} from 'node:fs'
 
@@ -38,6 +39,7 @@ class TrayScanner {
   private screenCapture: ScreenCapture | null = null
   private qrScanner: QRScanner | null = null
   private ocrProcessor: OCRProcessor | null = null
+  private versionController: VersionController | null = null
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
@@ -62,6 +64,24 @@ class TrayScanner {
   }
 
   async init(): Promise<void> {
+    // Initialize version controller first
+    this.versionController = new VersionController()
+    
+    // Check version status on startup with comprehensive error handling
+    try {
+      const versionStatus = await this.versionController.checkVersionStatus()
+      const shouldContinue = await this.handleVersionStatus(versionStatus)
+      
+      if (!shouldContinue) {
+        console.log('🚫 App terminated due to version policy')
+        app.quit()
+        return
+      }
+    } catch (error) {
+      console.error('🔥 Version check failed completely, allowing app to start:', error)
+      // CRITICAL: Always allow app to start if version check completely fails
+    }
+
     // Initialize modules
     this.screenCapture = new ScreenCapture()
     this.qrScanner = new QRScanner()
@@ -83,6 +103,12 @@ class TrayScanner {
 
     // Set up global keyboard shortcuts
     this.setupGlobalShortcuts()
+
+    // Set up periodic version checks with network awareness
+    this.setupPeriodicVersionChecks()
+    
+    // Monitor network connectivity
+    this.setupNetworkMonitoring()
 
     // Prevent app from quitting when all windows are closed
     app.on('window-all-closed', () => {
@@ -119,13 +145,28 @@ class TrayScanner {
       detail: `To enable screen recording:\n\n1. Open ${settingsName}\n2. Go to Privacy & Security > Screen Recording\n3. Add this application and enable it\n4. Restart the application\n\nAfter enabling the permission, try again.`,
       buttons: ['OK', 'Open System Preferences'],
       defaultId: 0,
-      cancelId: 0
+      cancelId: 0,
+      icon: this.getAppIcon()
     }).then((result) => {
       if (result.response === 1) {
         // Open System Preferences to the Screen Recording section
         shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture')
       }
     })
+  }
+
+  /**
+   * Get the app icon for dialog boxes
+   */
+  private getAppIcon(): Electron.NativeImage {
+    try {
+      const iconPath = join(app.getAppPath(), 'resources', 'appicon.png')
+      return nativeImage.createFromPath(iconPath)
+    } catch (error) {
+      console.warn('Failed to load app icon:', error)
+      // Return empty image as fallback
+      return nativeImage.createEmpty()
+    }
   }
 
   /**
@@ -224,6 +265,14 @@ class TrayScanner {
         ]
       },
       { type: 'separator' },
+      {
+        label: 'Check for Updates',
+        click: async () => {
+          console.log('Tray action: Check for Updates')
+          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Check for Updates')
+          await this.performManualUpdateCheck()
+        }
+      },
       {
         label: 'About SayaLens',
         click: () => {
@@ -407,6 +456,22 @@ class TrayScanner {
       } catch (error) {
         console.error('Failed to track analytics event:', error)
         return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('get-app-version', async () => {
+      try {
+        return {
+          success: true,
+          version: app.getVersion()
+        }
+      } catch (error) {
+        console.error('Failed to get app version:', error)
+        return {
+          success: false,
+          error: (error as Error).message,
+          version: '1.0.0' // fallback version
+        }
       }
     })
 
@@ -605,6 +670,217 @@ class TrayScanner {
     this.aboutWindow.on('closed', () => {
       this.aboutWindow = null
     })
+  }
+
+  private setupPeriodicVersionChecks(): void {
+    // Check every 30 minutes, but only if we should (based on cache age)
+    setInterval(async () => {
+      if (this.versionController?.shouldCheckForUpdates()) {
+        await this.performPeriodicVersionCheck()
+      }
+    }, 30 * 60 * 1000) // 30 minutes
+  }
+
+  private setupNetworkMonitoring(): void {
+    // Monitor online/offline status
+    process.on('online', () => {
+      console.log('🌐 Network connection restored')
+      // Perform immediate version check when coming back online
+      setTimeout(() => this.performPeriodicVersionCheck(), 5000)
+    })
+
+    process.on('offline', () => {
+      console.log('📱 Network connection lost')
+    })
+  }
+
+  private async handleVersionStatus(versionStatus: VersionCheckResult): Promise<boolean> {
+    const { status, config, isOffline, cacheAge } = versionStatus
+
+    // Track version check event with offline context
+    this.sendAnalyticsEvent('version_check', 'app_lifecycle', `${status}_${isOffline ? 'offline' : 'online'}`)
+
+    // Add offline indicator to messages
+    const offlineNotice = isOffline ? '\n\n⚠️ You are currently offline.' : ''
+    const staleNotice = (isOffline && cacheAge > 24 * 60 * 60 * 1000) 
+      ? '\n📅 Version information may be outdated.' : ''
+
+    switch (status) {
+      case 'blocked':
+        if (isOffline) {
+          // Show warning but don't block when offline
+          await dialog.showMessageBox({
+            type: 'warning',
+            title: 'Version Warning (Offline)',
+            message: 'Update May Be Required',
+            detail: `This version may need updating, but you're currently offline.${offlineNotice}${staleNotice}\n\nThe app will continue to work in offline mode.`,
+            buttons: ['Continue Offline'],
+            defaultId: 0,
+            icon: this.getAppIcon()
+          })
+          return true // Allow to continue offline
+        }
+        
+        const blockMessage = config.killSwitchMessage || 
+          `This version (${versionStatus.userVersion}) is no longer supported and must be updated.`
+        
+        await dialog.showMessageBox({
+          type: 'error',
+          title: 'App Disabled',
+          message: 'SayaLens Update Required',
+          detail: blockMessage + offlineNotice,
+          buttons: ['Download Update', 'Exit'],
+          defaultId: 0,
+          cancelId: 1,
+          icon: this.getAppIcon()
+        }).then((result) => {
+          if (result.response === 0) {
+            shell.openExternal(config.downloadUrl)
+          }
+        })
+        
+        this.sendAnalyticsEvent('version_blocked', 'app_lifecycle', versionStatus.userVersion)
+        return false
+
+      case 'force_update':
+        const forceMessage = isOffline 
+          ? 'This version has issues, but you can continue offline. Please update when online.'
+          : 'This version has critical issues and must be updated immediately.'
+        
+        const forceResult = await dialog.showMessageBox({
+          type: 'warning',
+          title: isOffline ? 'Update Recommended (Offline)' : 'Critical Update Required',
+          message: forceMessage,
+          detail: config.updateMessage + offlineNotice + staleNotice,
+          buttons: isOffline ? ['Continue Offline', 'Exit'] : ['Update Now', 'Exit App'],
+          defaultId: 0,
+          cancelId: 1,
+          icon: this.getAppIcon()
+        })
+        
+        if (isOffline && forceResult.response === 0) {
+          this.sendAnalyticsEvent('force_update_continued_offline', 'app_lifecycle', versionStatus.userVersion)
+          return true // Allow to continue offline
+        }
+        
+        if (!isOffline && forceResult.response === 0) {
+          shell.openExternal(config.downloadUrl)
+        }
+        
+        this.sendAnalyticsEvent('force_update_required', 'app_lifecycle', versionStatus.userVersion)
+        return false
+
+      case 'deprecated':
+        // Always show deprecation warning but don't block
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Update Recommended',
+          message: 'Your version will be deprecated soon',
+          detail: `${config.updateMessage}${offlineNotice}${staleNotice}\n\nYou can continue using this version for now.`,
+          buttons: isOffline ? ['Continue'] : ['Download Update', 'Continue'],
+          defaultId: 0,
+          icon: this.getAppIcon()
+        }).then((result) => {
+          if (!isOffline && result.response === 0) {
+            shell.openExternal(config.downloadUrl)
+          }
+        })
+        
+        this.sendAnalyticsEvent('version_deprecated_warning', 'app_lifecycle', versionStatus.userVersion)
+        return true
+
+      case 'allowed':
+        // Check if there's a newer version available (only show when online)
+        if (!isOffline && this.versionController?.isVersionNewer(config.latestVersion, versionStatus.userVersion)) {
+          this.showOptionalUpdateNotification(config)
+        }
+        return true
+
+      default:
+        return true
+    }
+  }
+
+  private async performPeriodicVersionCheck(): Promise<void> {
+    if (!this.versionController) return
+    
+    try {
+      console.log('🔄 Performing periodic version check...')
+      const versionStatus = await this.versionController.checkVersionStatus()
+      
+      // Only take action for blocked or force_update status
+      if (versionStatus.status === 'blocked' || versionStatus.status === 'force_update') {
+        const shouldContinue = await this.handleVersionStatus(versionStatus)
+        if (!shouldContinue) {
+          app.quit()
+        }
+      }
+      
+    } catch (error) {
+      console.warn('🔄 Periodic version check failed (continuing normally):', error)
+      // CRITICAL: Never crash the app due to version check failures
+    }
+  }
+
+  private showOptionalUpdateNotification(_config: any): void {
+    // Add update notification to tray icon (optional)
+    if (this.tray) {
+      try {
+        this.tray.displayBalloon({
+          title: 'SayaLens Update Available',
+          content: 'A new version is ready to download!',
+          icon: this.createTrayIconImage()
+        })
+      } catch (error) {
+        console.warn('Failed to show update balloon:', error)
+      }
+    }
+  }
+
+  // Enhanced manual update check with offline awareness
+  private async performManualUpdateCheck(): Promise<void> {
+    if (!this.versionController) return
+    
+    try {
+      const versionStatus = await this.versionController.checkVersionStatus()
+      
+      if (versionStatus.isOffline) {
+        const cacheAgeHours = Math.round(versionStatus.cacheAge / (60 * 60 * 1000))
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Offline Mode',
+          message: 'Cannot check for updates while offline',
+          detail: `Last update check: ${cacheAgeHours} hours ago\nCurrent version: ${versionStatus.userVersion}\n\nPlease connect to the internet to check for updates.`,
+          buttons: ['OK'],
+          icon: this.getAppIcon()
+        })
+        return
+      }
+      
+      if (versionStatus.status === 'allowed' && 
+          !this.versionController.isVersionNewer(versionStatus.config.latestVersion, versionStatus.userVersion)) {
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'No Updates Available',
+          message: 'You have the latest version!',
+          detail: `Current version: ${versionStatus.userVersion}`,
+          buttons: ['OK'],
+          icon: this.getAppIcon()
+        })
+      } else {
+        await this.handleVersionStatus(versionStatus)
+      }
+      
+    } catch (error) {
+      dialog.showMessageBox({
+        type: 'error',
+        title: 'Update Check Failed',
+        message: 'Unable to check for updates',
+        detail: 'Please check your internet connection and try again.',
+        buttons: ['OK'],
+        icon: this.getAppIcon()
+      })
+    }
   }
 }
 
