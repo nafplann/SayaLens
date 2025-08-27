@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {Copy, X, Check, Image as ImageIcon, AlertCircle, QrCode, FileText} from 'lucide-react';
+import {Copy, Check, Image as ImageIcon, AlertCircle, QrCode, FileText} from 'lucide-react';
 
 interface ResultData {
   success: boolean
@@ -147,9 +147,9 @@ export default function OCRResultPage() {
     console.log(`Language preference saved: ${selectedLanguage}`)
   }, [selectedLanguage])
 
-  const handleClose = () => {
-    window.api?.closeResult()
-  }
+  // const handleClose = () => {
+  //   window.api?.closeResult()
+  // }
 
   const handleCopy = async (text: string) => {
     try {
@@ -190,9 +190,9 @@ export default function OCRResultPage() {
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
             {/* OCR Text */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
+            <Card className="flex-2 shadow-lg border-0 bg-white/80 backdrop-blur">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center justify-between text-lg">
                   <div className="flex items-center">
@@ -243,7 +243,7 @@ export default function OCRResultPage() {
                 <Textarea
                     value={displayText}
                     readOnly
-                    className="field-sizing-content resize-none border-slate-200 bg-slate-50 text-slate-800 leading-relaxed"
+                    className="h-full field-sizing-content resize-none border-slate-200 bg-slate-50 text-slate-800 leading-relaxed"
                     placeholder="No text detected in the image"
                 />
                 <div className="flex justify-between items-center mt-4 text-sm text-slate-500">
@@ -255,7 +255,7 @@ export default function OCRResultPage() {
 
             {/* Captured Image */}
             {resultData.capturedImage && (
-              <Card className="overflow-hidden shadow-lg border-0 bg-white/80 backdrop-blur">
+              <Card className="flex-1 overflow-hidden shadow-lg border-0 bg-white/80 backdrop-blur">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center text-lg">
                     <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
