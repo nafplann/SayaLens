@@ -243,7 +243,7 @@ describe('Version Control Integration Tests', () => {
     try {
       // Try to make directory read-only (may not work on all systems)
       fs.chmodSync(readOnlyDir, 0o444)
-    } catch (error) {
+    } catch {
       // Skip this test if we can't create read-only directory
       return
     }
@@ -348,6 +348,7 @@ describe('Version Control Integration Tests', () => {
     const cacheFile = versionController.getCacheFilePath()
     if (fs.existsSync(cacheFile)) {
       // If cache exists, it should be valid JSON
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(() => {
         JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
       }).not.toThrow()

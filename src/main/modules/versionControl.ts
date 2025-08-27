@@ -209,9 +209,9 @@ export class VersionController {
     cacheAge: number
   ): 'allowed' | 'deprecated' | 'force_update' | 'blocked' {
     
-    // OFFLINE SAFETY: If we're offline with stale cache, be more lenient
-    if (isOffline && cacheAge > this.maxCacheAge) {
-      console.log('🔒 Offline with stale cache - allowing app to run')
+    // OFFLINE SAFETY: If cache is extremely stale (>6 hours), allow app to run completely
+    if (isOffline && cacheAge > 6 * 60 * 60 * 1000) { // 6 hours
+      console.log('🔒 Offline with very stale cache - allowing app to run')
       return 'allowed'
     }
 
@@ -220,22 +220,22 @@ export class VersionController {
       return 'blocked'
     }
 
-    // OFFLINE SAFETY: Be lenient with minimum version when offline
-    if (this.isVersionBelow(currentVersion, config.minimumVersion)) {
-      if (isOffline) {
-        console.log('🌐 Offline mode - allowing below minimum version')
-        return 'deprecated' // Downgrade from blocked to deprecated when offline
-      }
-      return 'blocked'
-    }
-
-    // Force update check (still enforced offline if cached recently)
+    // Force update check (handle offline grace period)
     if (config.forceUpdateVersions.includes(currentVersion)) {
       if (isOffline && cacheAge > 60 * 60 * 1000) { // 1 hour grace period
         console.log('🌐 Offline mode - downgrading force update to deprecated')
         return 'deprecated'
       }
       return 'force_update'
+    }
+
+    // OFFLINE SAFETY: Be lenient with minimum version when offline
+    if (this.isVersionBelow(currentVersion, config.minimumVersion)) {
+      if (isOffline) {
+        console.log('🌐 Offline mode - downgrading blocked to deprecated')
+        return 'deprecated' // Downgrade from blocked to deprecated when offline
+      }
+      return 'blocked'
     }
 
     // Deprecation check

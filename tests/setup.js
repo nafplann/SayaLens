@@ -12,20 +12,20 @@ const originalConsole = { ...console }
 
 global.console = {
   ...console,
-  log: jest.fn((...args) => {
+  log: jest.fn(() => {
     // Optionally uncomment the line below to see logs during tests
-    // originalConsole.log(...args)
+    // originalConsole.log(...arguments)
   }),
-  warn: jest.fn((...args) => {
+  warn: jest.fn(() => {
     // Optionally uncomment the line below to see warnings during tests
-    // originalConsole.warn(...args)
+    // originalConsole.warn(...arguments)
   }),
-  error: jest.fn((...args) => {
+  error: jest.fn(() => {
     // Optionally uncomment the line below to see errors during tests
-    // originalConsole.error(...args)
+    // originalConsole.error(...arguments)
   }),
-  info: jest.fn((...args) => {
-    // originalConsole.info(...args)
+  info: jest.fn(() => {
+    // originalConsole.info(...arguments)
   })
 }
 
@@ -53,9 +53,6 @@ if (!global.AbortController) {
 }
 
 // Mock setTimeout and clearTimeout for controlled testing
-const originalSetTimeout = global.setTimeout
-const originalClearTimeout = global.clearTimeout
-
 global.mockTimers = {
   enable: () => {
     jest.useFakeTimers()
@@ -72,7 +69,7 @@ global.mockTimers = {
 afterAll(() => {
   try {
     fs.rmSync(tempDir, { recursive: true, force: true })
-  } catch (error) {
+  } catch {
     // Ignore cleanup errors
   }
 })

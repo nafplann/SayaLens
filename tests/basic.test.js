@@ -10,7 +10,7 @@ describe('Basic Tests', () => {
 
   test('Array operations', () => {
     const arr = [1, 2, 3];
-    expect(arr.length).toBe(3);
+    expect(arr).toHaveLength(3);
     expect(arr.includes(2)).toBe(true);
   });
 
