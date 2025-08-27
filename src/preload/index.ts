@@ -14,6 +14,10 @@ const api = {
   
   // Utility functions
   copyToClipboard: (text: string) => ipcRenderer.invoke('copy-to-clipboard', text),
+  setOCRLanguage: (language: string) => ipcRenderer.invoke('set-ocr-language', language),
+  reprocessOCR: (imagePath: string) => ipcRenderer.invoke('reprocess-ocr', imagePath),
+  getStoredLanguage: () => ipcRenderer.invoke('get-stored-language'),
+  syncLanguagePreference: (language: string) => ipcRenderer.invoke('sync-language-preference', language),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),

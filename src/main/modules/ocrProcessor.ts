@@ -13,6 +13,7 @@ interface OCRResult {
  */
 export default class OCRProcessor {
   private worker: Worker | null = null
+  private currentLanguage: string = 'eng'
 
   /**
    * Creates an OCRProcessor instance
@@ -29,9 +30,37 @@ export default class OCRProcessor {
    */
   private async initWorker(): Promise<Worker> {
     if (!this.worker) {
-      this.worker = await createWorker('eng')
+      this.worker = await createWorker(this.currentLanguage)
     }
     return this.worker
+  }
+
+  /**
+   * Changes the OCR language and reinitializes the worker
+   * @param language - The language code (e.g., 'eng', 'jpn', 'fra')
+   */
+  async setLanguage(language: string): Promise<void> {
+    if (this.currentLanguage === language) {
+      return // No change needed
+    }
+
+    // Terminate existing worker if it exists
+    if (this.worker) {
+      await this.worker.terminate()
+      this.worker = null
+    }
+
+    // Set new language and reinitialize worker
+    this.currentLanguage = language
+    await this.initWorker()
+  }
+
+  /**
+   * Gets the current language being used for OCR
+   * @returns The current language code
+   */
+  getCurrentLanguage(): string {
+    return this.currentLanguage
   }
 
   /**

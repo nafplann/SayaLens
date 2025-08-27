@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import {Copy, X, QrCode, FileText, AlertCircle, ImageIcon, Check} from 'lucide-react'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
-import { cn } from '../lib/utils'
-import { Textarea } from '@renderer/components/ui/textarea'
+import {useEffect, useState} from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {Copy, Check, Image as ImageIcon, AlertCircle, QrCode, FileText} from 'lucide-react';
 
 interface ResultData {
   success: boolean
@@ -15,23 +15,32 @@ interface ResultData {
   mode?: 'qr' | 'ocr'
 }
 
-interface CopyFeedbackState {
-  show: boolean
-  message: string
-}
+const languages = [
+  { code: 'eng', name: 'English' },
+  { code: 'ara', name: 'Arabic' },
+  { code: 'chi_sim', name: 'Chinese' },
+  { code: 'fra', name: 'French' },
+  { code: 'deu', name: 'German' },
+  { code: 'hin', name: 'Hindi' },
+  { code: 'ita', name: 'Italian' },
+  { code: 'jpn', name: 'Japanese' },
+  { code: 'kor', name: 'Korean' },
+  { code: 'por', name: 'Portuguese' },
+  { code: 'rus', name: 'Russian' },
+  { code: 'spa', name: 'Spanish' },
+  { code: 'tha', name: 'Thai' },
+  { code: 'vie', name: 'Vietnamese' },
+];
 
-export default function Result() {
-  const [resultData, setResultData] = useState<ResultData | null>({
-    capturedImage: "",
-    confidence: 100,
-    data: "",
-    error: "",
-    mode: 'ocr',
-    success: true,
-    text: "Helloww"
-  })
-  const [copyFeedback, setCopyFeedback] = useState<CopyFeedbackState>({ show: false, message: '' })
+export default function OCRResultPage() {
+  const [resultData, setResultData] = useState<ResultData | null>(null)
   const [copied, setCopied] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    // Load saved language preference or default to English
+    return localStorage.getItem('ocr-language') || 'eng';
+  });
+  const [isReprocessing, setIsReprocessing] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (window.api?.onShowData) {
@@ -41,26 +50,116 @@ export default function Result() {
       })
     }
 
+    // Sync the stored language preference with the main process
+    const syncLanguage = async () => {
+      try {
+        await window.api?.syncLanguagePreference(selectedLanguage)
+        console.log(`Language preference synced with main process: ${selectedLanguage}`)
+      } catch (error) {
+        console.error('Failed to sync language preference:', error)
+      }
+    }
+    syncLanguage()
+
     return () => {
       if (window.api?.removeAllListeners) {
         window.api.removeAllListeners('show-data')
       }
     }
-  }, [])
+  }, [selectedLanguage])
+
+  useEffect(() => {
+    const changeLanguageAndReprocess = async () => {
+      if (!resultData) return;
+
+      // On initial load, just set the language without reprocessing
+      if (isInitialLoad) {
+        try {
+          const languageResult = await window.api?.setOCRLanguage(selectedLanguage)
+          if (languageResult && !languageResult.success) {
+            console.error('Failed to set initial OCR language:', languageResult.error)
+          } else {
+            console.log(`Initial OCR language set to: ${selectedLanguage}`)
+          }
+        } catch (error) {
+          console.error('Error setting initial OCR language:', error)
+        }
+        setIsInitialLoad(false)
+        return
+      }
+
+      const isOCRMode = resultData.mode === 'ocr' || (!resultData.mode && !resultData.data)
+
+      try {
+        // First, change the language
+        const languageResult = await window.api?.setOCRLanguage(selectedLanguage)
+        if (languageResult && !languageResult.success) {
+          console.error('Failed to change OCR language:', languageResult.error)
+          return
+        }
+        console.log(`OCR language changed to: ${selectedLanguage}`)
+
+        // If we have a captured image and it's OCR mode, reprocess it
+        if (isOCRMode && resultData.capturedImage) {
+          setIsReprocessing(true)
+
+          // Extract the actual file path from the captured image
+          let imagePath = resultData.capturedImage
+          if (imagePath.startsWith('data:image/png;base64,')) {
+            // Skip reprocessing for base64 images (QR mode)
+            setIsReprocessing(false)
+            return
+          }
+          if (imagePath.startsWith('media://')) {
+            imagePath = imagePath.replace('media://', '')
+          }
+
+          console.log('Reprocessing image with new language:', imagePath)
+          const reprocessResult = await window.api?.reprocessOCR(imagePath)
+
+          if (reprocessResult && reprocessResult.success) {
+            // Update the result data with new OCR results
+            setResultData(prev => prev ? {
+              ...prev,
+              text: reprocessResult.text,
+              confidence: reprocessResult.confidence,
+              success: reprocessResult.success
+            } : null)
+            console.log('Reprocessing completed successfully')
+          } else {
+            console.error('Reprocessing failed:', reprocessResult?.error)
+          }
+
+          setIsReprocessing(false)
+        }
+      } catch (error) {
+        console.error('Error during language change and reprocessing:', error)
+        setIsReprocessing(false)
+      }
+    }
+
+    changeLanguageAndReprocess()
+  }, [selectedLanguage, resultData?.capturedImage, isInitialLoad])
+
+  // Save language preference whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ocr-language', selectedLanguage)
+    console.log(`Language preference saved: ${selectedLanguage}`)
+  }, [selectedLanguage])
+
+  // const handleClose = () => {
+  //   window.api?.closeResult()
+  // }
 
   const handleCopy = async (text: string) => {
     try {
       await window.api?.copyToClipboard(text)
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
+      setTimeout(() => setCopied(false), 1000);
+    } catch (err) {
+      // toast
     }
-  }
-
-  const handleClose = () => {
-    window.api?.closeResult()
-  }
+  };
 
   if (!resultData) {
     return (
@@ -79,8 +178,8 @@ export default function Result() {
   const displayText = resultData.text || resultData.data || ''
 
   const getIcon = () => {
-    if (!isSuccess) return <AlertCircle className="w-6 h-6 text-red-500" />
-    return isQRMode ? <QrCode className="w-6 h-6 text-blue-500" /> : <FileText className="w-6 h-6 text-green-500" />
+    if (!isSuccess) return <AlertCircle className="w-5 h-5 text-red-500" />
+    return isQRMode ? <QrCode className="w-5 h-5 text-blue-600" /> : <FileText className="w-5 h-5 text-blue-600" />
   }
 
   const getTitle = () => {
@@ -88,100 +187,98 @@ export default function Result() {
     return isQRMode ? 'QR Code Result' : 'Text Recognition Result'
   }
 
-  const getHeaderColor = () => {
-    if (!isSuccess) return 'text-red-600'
-    return isQRMode ? 'text-blue-600' : 'text-green-600'
-  }
-
-  const onClose = () => {};
-
   return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
-          <Card className="shadow-lg">
-            <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-primary-foreground">OCR Results</CardTitle>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="text-primary-foreground hover:bg-primary-foreground/20"
-                >
-                  <X size={24} />
-                </Button>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Captured Image */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon size={20} className="text-primary" />
-                    <h2 className="text-lg font-semibold">Captured Image</h2>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col gap-6">
+            {/* OCR Text */}
+            <Card className="flex-2 shadow-lg border-0 bg-white/80 backdrop-blur">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between text-lg">
+                  <div className="flex items-center">
+                    {getIcon()}
+                    <span className="pl-2">{getTitle()}</span>
+                    {isReprocessing && (
+                      <span className="ml-2 text-sm text-blue-600 animate-pulse">
+                        (Processing...)
+                      </span>
+                    )}
                   </div>
-                  <Card className="bg-muted/50">
-                    <CardContent className="p-4 min-h-[300px] flex items-center justify-center">
-                      {resultData.capturedImage ? (
-                          <img
-                              src={resultData.capturedImage.startsWith('data:')
-                                  ? resultData.capturedImage
-                                  : `media://${resultData.capturedImage}`
-                              }
-                              alt="Captured screenshot"
-                              className="max-w-full max-h-[400px] object-contain rounded-md shadow-sm"
-                          />
-                      ) : (
-                          <div className="text-muted-foreground text-center">
-                            <ImageIcon size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>No image available</p>
-                          </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* OCR Text */}
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">Extracted Text</h2>
-                  <Card className="bg-muted/50">
-                    <CardContent className="p-4">
-                      <Textarea
-                          value={resultData.text}
-                          readOnly
-                          className="min-h-[280px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0"
-                          placeholder="No text extracted"
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Button onClick={() => handleCopy(displayText)} className="flex items-center gap-2">
+                  <div className="flex">
+                    {!isQRMode && (
+                      <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isReprocessing}>
+                        <SelectTrigger className="w-40 h-8 text-xs">
+                          <SelectValue placeholder="Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {languages.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code} className="text-xs">
+                                {lang.name}
+                              </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                        onClick={() => handleCopy(displayText)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 ml-2"
+                    >
                       {copied ? (
                           <>
-                            <Check size={18} />
+                            <Check className="w-4 h-4 mr-2" />
                             Copied!
                           </>
                       ) : (
                           <>
-                            <Copy size={18} />
-                            Copy to Clipboard
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy Text
                           </>
                       )}
                     </Button>
-
-                    <Button variant="secondary" onClick={onClose} className="flex items-center gap-2">
-                      <X size={18} />
-                      Close
-                    </Button>
                   </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                    value={displayText}
+                    readOnly
+                    className="h-full field-sizing-content resize-none border-slate-200 bg-slate-50 text-slate-800 leading-relaxed"
+                    placeholder="No text detected in the image"
+                />
+                <div className="flex justify-between items-center mt-4 text-sm text-slate-500">
+                  <span>{displayText.length} characters</span>
+                  <span>{displayText.split(/\s+/).filter(word => word.length > 0).length} words</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Captured Image */}
+            {resultData.capturedImage && (
+              <Card className="flex-1 overflow-hidden shadow-lg border-0 bg-white/80 backdrop-blur">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center text-lg">
+                    <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
+                    Captured Image
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-lg overflow-hidden bg-slate-100">
+                    <img
+                        src={resultData.capturedImage.startsWith('data:')
+                            ? resultData.capturedImage
+                            : `media://${resultData.capturedImage}`
+                        }
+                        alt="Captured screenshot"
+                        className="w-full h-auto max-h-96 object-contain"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-  )
+  );
 }

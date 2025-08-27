@@ -136,6 +136,7 @@ class QRScanner {
 }
 class OCRProcessor {
   worker = null;
+  currentLanguage = "eng";
   /**
    * Creates an OCRProcessor instance
    */
@@ -150,9 +151,31 @@ class OCRProcessor {
    */
   async initWorker() {
     if (!this.worker) {
-      this.worker = await tesseract_js.createWorker("eng");
+      this.worker = await tesseract_js.createWorker(this.currentLanguage);
     }
     return this.worker;
+  }
+  /**
+   * Changes the OCR language and reinitializes the worker
+   * @param language - The language code (e.g., 'eng', 'jpn', 'fra')
+   */
+  async setLanguage(language) {
+    if (this.currentLanguage === language) {
+      return;
+    }
+    if (this.worker) {
+      await this.worker.terminate();
+      this.worker = null;
+    }
+    this.currentLanguage = language;
+    await this.initWorker();
+  }
+  /**
+   * Gets the current language being used for OCR
+   * @returns The current language code
+   */
+  getCurrentLanguage() {
+    return this.currentLanguage;
   }
   /**
    * Extracts text from an image file using OCR
@@ -201,6 +224,7 @@ class TrayScanner {
   ocrProcessor = null;
   captureWindow = null;
   resultWindow = null;
+  storedLanguage = "eng";
   async init() {
     this.screenCapture = new ScreenCapture();
     this.qrScanner = new QRScanner();
@@ -406,6 +430,57 @@ After enabling the permission, try again.`,
     electron.ipcMain.handle("copy-to-clipboard", (_event, text) => {
       electron.clipboard.writeText(text);
     });
+    electron.ipcMain.handle("set-ocr-language", async (_event, language) => {
+      try {
+        await this.ocrProcessor?.setLanguage(language);
+        this.storedLanguage = language;
+        console.log(`OCR language set and stored: ${language}`);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to set OCR language:", error);
+        return { success: false, error: error.message };
+      }
+    });
+    electron.ipcMain.handle("reprocess-ocr", async (_event, imagePath) => {
+      try {
+        console.log("Reprocessing OCR with new language for image:", imagePath);
+        const ocrResult = await this.ocrProcessor?.extractText(imagePath);
+        return {
+          ...ocrResult,
+          capturedImage: imagePath
+        };
+      } catch (error) {
+        console.error("OCR reprocessing failed:", error);
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+    });
+    electron.ipcMain.handle("get-stored-language", async () => {
+      try {
+        return {
+          success: true,
+          language: this.storedLanguage
+        };
+      } catch (error) {
+        console.error("Failed to get stored language:", error);
+        return {
+          success: false,
+          language: "eng"
+        };
+      }
+    });
+    electron.ipcMain.handle("sync-language-preference", async (_event, language) => {
+      try {
+        this.storedLanguage = language;
+        console.log(`Language preference synced: ${language}`);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to sync language preference:", error);
+        return { success: false, error: error.message };
+      }
+    });
     electron.ipcMain.on("capture-complete", () => {
       if (this.captureWindow) {
         this.captureWindow.close();
@@ -466,6 +541,17 @@ After enabling the permission, try again.`,
     this.createCaptureWindow("qr");
   }
   async startOCR() {
+    try {
+      const currentLanguage = this.ocrProcessor?.getCurrentLanguage() || "eng";
+      if (this.storedLanguage !== currentLanguage) {
+        console.log(`Updating OCR language to stored preference: ${this.storedLanguage}`);
+        await this.ocrProcessor?.setLanguage(this.storedLanguage);
+      } else {
+        console.log(`Starting OCR with language: ${this.storedLanguage}`);
+      }
+    } catch (error) {
+      console.warn("Error setting stored language for OCR:", error);
+    }
     this.createCaptureWindow("ocr");
   }
   createCaptureWindow(mode) {
@@ -511,9 +597,9 @@ After enabling the permission, try again.`,
   showResult(data) {
     console.log("Creating result window");
     this.resultWindow = new electron.BrowserWindow({
-      width: 400,
-      height: 500,
-      resizable: true,
+      width: 720,
+      height: 640,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,

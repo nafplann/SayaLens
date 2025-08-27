@@ -87,6 +87,10 @@ const api = {
   captureAndProcessOCR: (bounds) => electron.ipcRenderer.invoke("capture-and-process-ocr", bounds),
   // Utility functions
   copyToClipboard: (text) => electron.ipcRenderer.invoke("copy-to-clipboard", text),
+  setOCRLanguage: (language) => electron.ipcRenderer.invoke("set-ocr-language", language),
+  reprocessOCR: (imagePath) => electron.ipcRenderer.invoke("reprocess-ocr", imagePath),
+  getStoredLanguage: () => electron.ipcRenderer.invoke("get-stored-language"),
+  syncLanguagePreference: (language) => electron.ipcRenderer.invoke("sync-language-preference", language),
   // Window management
   captureComplete: () => electron.ipcRenderer.send("capture-complete"),
   showResult: (data) => electron.ipcRenderer.send("show-result", data),
