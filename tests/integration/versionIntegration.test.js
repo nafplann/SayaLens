@@ -3,78 +3,68 @@ const path = require('path')
 
 const {
   createMockVersionConfig,
-  createTempDir,
-  cleanupTempDir
+  createFetchMock
 } = require('../utils/testUtils')
 
+// Mock Electron dependencies before importing VersionController
+const mockApp = {
+  getVersion: jest.fn(() => '1.0.0'),
+  getPath: jest.fn((name) => {
+    if (name === 'userData') return '/tmp/test-user-data'
+    return '/tmp'
+  }),
+  getAppPath: jest.fn(() => '/test/app/path')
+}
+
+// Mock electron app
+jest.mock('electron', () => ({
+  app: mockApp
+}))
+
+// Import VersionController directly from TypeScript source
+const { VersionController } = require('../../src/main/modules/versionControl.ts')
+
 describe('Version Control Integration Tests', () => {
-  let VersionController
   let tempDir
   let versionController
+  let fetchMock
 
-  beforeAll(async () => {
-    // Import the compiled module
+  beforeAll(() => {
+    // Create real temp directory
+    tempDir = fs.mkdtempSync(path.join(fs.realpathSync('/tmp'), 'integration-test-'))
+  })
+
+  afterAll(() => {
+    // Clean up temp directory
     try {
-      const modulePath = path.join(__dirname, '..', '..', 'out', 'main', 'modules', 'versionControl.js')
-      if (fs.existsSync(modulePath)) {
-        const module = require(modulePath)
-        VersionController = module.VersionController
-      } else {
-        // Skip tests if module hasn't been built yet
-        console.warn('VersionController module not built yet. Run "npm run build" first.')
-        VersionController = class MockVersionController {
-          constructor() {
-            this.cacheFilePath = path.join(tempDir || '/tmp', 'version-cache.json')
-          }
-          async checkVersionStatus() { 
-            return { 
-              status: 'allowed', 
-              config: createMockVersionConfig(),
-              userVersion: '1.0.0',
-              isOffline: false,
-              cacheAge: 0
-            } 
-          }
-          getCacheFilePath() { return this.cacheFilePath }
-        }
-      }
-    } catch (error) {
-      console.warn('Could not import VersionController:', error.message)
-      // Provide a mock implementation for tests to pass
-      VersionController = class MockVersionController {
-        constructor() {
-          this.cacheFilePath = path.join(tempDir || '/tmp', 'version-cache.json')
-        }
-        async checkVersionStatus() { 
-          return { 
-            status: 'allowed', 
-            config: createMockVersionConfig(),
-            userVersion: '1.0.0',
-            isOffline: false,
-            cacheAge: 0
-          } 
-        }
-        getCacheFilePath() { return this.cacheFilePath }
-      }
+      fs.rmSync(tempDir, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
     }
   })
 
   beforeEach(() => {
-    // Create a real temporary directory for integration tests
-    tempDir = createTempDir('integration-test-')
     jest.clearAllMocks()
-    global.fetch = jest.fn()
+    
+    // Create unique temp dir for each test  
+    const testTempDir = fs.mkdtempSync(path.join(tempDir, 'test-'))
+    
+    // Set up fetch mock
+    fetchMock = createFetchMock()
+    global.fetch = fetchMock.mockFetch
+    
+    // Configure app mock
+    mockApp.getVersion.mockReturnValue('1.0.0')
+    mockApp.getPath.mockImplementation((name) => {
+      if (name === 'userData') return testTempDir
+      return '/tmp'
+    })
     
     versionController = new VersionController(
       'https://example.com/version-config.json',
-      tempDir,
+      testTempDir,
       { maxCacheAge: 1000, networkTimeout: 2000 } // Short times for testing
     )
-  })
-
-  afterEach(() => {
-    // Clean up temporary directory
-    cleanupTempDir(tempDir)
   })
 
   test('should create cache file and read it back', async () => {
@@ -83,10 +73,7 @@ describe('Version Control Integration Tests', () => {
       updateMessage: 'Test update message'
     })
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockConfig)
-    })
+    fetchMock.mockSuccess(mockConfig)
 
     // First call should create cache
     const result1 = await versionController.checkVersionStatus()
@@ -104,7 +91,7 @@ describe('Version Control Integration Tests', () => {
     expect(typeof cacheContent.lastFetched).toBe('number')
 
     // Second call with network failure should use cache
-    global.fetch.mockRejectedValue(new Error('Network error'))
+    fetchMock.mockNetworkError('Network error')
     const result2 = await versionController.checkVersionStatus()
     
     expect(result2.isOffline).toBe(true)
@@ -117,10 +104,7 @@ describe('Version Control Integration Tests', () => {
       latestVersion: '1.2.0'
     })
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockConfig)
-    })
+    fetchMock.mockSuccess(mockConfig)
 
     // Create cache
     await versionController.checkVersionStatus()
@@ -132,7 +116,7 @@ describe('Version Control Integration Tests', () => {
     fs.writeFileSync(cacheFile, JSON.stringify(cacheData))
 
     // Should recognize cache as stale when offline
-    global.fetch.mockRejectedValue(new Error('Network error'))
+    fetchMock.mockNetworkError('Network error')
     const result = await versionController.checkVersionStatus()
     
     expect(result.cacheAge).toBeGreaterThan(1000) // Should detect stale cache
@@ -146,10 +130,7 @@ describe('Version Control Integration Tests', () => {
       updateMessage: 'Real test message'
     })
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(realConfig)
-    })
+    fetchMock.mockSuccess(realConfig)
 
     const result = await versionController.checkVersionStatus()
     
@@ -185,28 +166,28 @@ describe('Version Control Integration Tests', () => {
   })
 
   test('should persist cache across multiple instances', async () => {
+    // Create a shared temp directory for this test
+    const sharedTempDir = fs.mkdtempSync(path.join(tempDir, 'shared-'))
+    
     const mockConfig = createMockVersionConfig({
       latestVersion: '1.3.0'
     })
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockConfig)
-    })
+    fetchMock.mockSuccess(mockConfig)
 
     // First instance creates cache
     const controller1 = new VersionController(
       'https://example.com/config.json',
-      tempDir
+      sharedTempDir
     )
     const result1 = await controller1.checkVersionStatus()
     expect(result1.config.latestVersion).toBe('1.3.0')
 
     // Second instance should read from cache when offline
-    global.fetch.mockRejectedValue(new Error('Network error'))
+    fetchMock.mockNetworkError('Network error')
     const controller2 = new VersionController(
       'https://example.com/config.json',
-      tempDir
+      sharedTempDir
     )
     const result2 = await controller2.checkVersionStatus()
     
@@ -219,7 +200,7 @@ describe('Version Control Integration Tests', () => {
     const cacheFile = path.join(tempDir, 'version-cache.json')
     fs.writeFileSync(cacheFile, 'invalid json content')
 
-    global.fetch.mockRejectedValue(new Error('Network error'))
+    fetchMock.mockNetworkError('Network error')
 
     const result = await versionController.checkVersionStatus()
     
@@ -231,10 +212,7 @@ describe('Version Control Integration Tests', () => {
   test('should handle file permission errors gracefully', async () => {
     const mockConfig = createMockVersionConfig()
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockConfig)
-    })
+    fetchMock.mockSuccess(mockConfig)
 
     // Mock write permission error by creating a read-only directory
     const readOnlyDir = path.join(tempDir, 'readonly')
@@ -259,6 +237,9 @@ describe('Version Control Integration Tests', () => {
   })
 
   test('should maintain cache consistency under concurrent access', async () => {
+    // Create shared temp directory for concurrent access test
+    const concurrentTempDir = fs.mkdtempSync(path.join(tempDir, 'concurrent-'))
+    
     const mockConfig1 = createMockVersionConfig({
       latestVersion: '1.4.0'
     })
@@ -266,24 +247,24 @@ describe('Version Control Integration Tests', () => {
       latestVersion: '1.5.0'
     })
 
-    // Simulate concurrent access
-    global.fetch
-      .mockResolvedValueOnce({
+    // Set up manual fetch mock for different responses
+    let callCount = 0
+    global.fetch = jest.fn().mockImplementation(() => {
+      callCount++
+      const config = callCount === 1 ? mockConfig1 : mockConfig2
+      return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve(mockConfig1)
+        json: () => Promise.resolve(config)
       })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockConfig2)
-      })
+    })
 
     const controller1 = new VersionController(
       'https://example.com/config1.json',
-      tempDir
+      concurrentTempDir
     )
     const controller2 = new VersionController(
       'https://example.com/config2.json',
-      tempDir
+      concurrentTempDir
     )
 
     // Both should complete without errors
@@ -299,6 +280,9 @@ describe('Version Control Integration Tests', () => {
   })
 
   test('should handle large cache files efficiently', async () => {
+    // Set app version to something not in deprecated list
+    mockApp.getVersion.mockReturnValue('2.0.0')
+    
     // Create a config with large data
     const largeConfig = createMockVersionConfig({
       updateMessage: 'A'.repeat(10000), // Large message
@@ -306,10 +290,7 @@ describe('Version Control Integration Tests', () => {
       forceUpdateVersions: Array.from({ length: 50 }, (_, i) => `0.9.${i}`)
     })
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(largeConfig)
-    })
+    fetchMock.mockSuccess(largeConfig)
 
     const start = Date.now()
     const result = await versionController.checkVersionStatus()
@@ -324,7 +305,7 @@ describe('Version Control Integration Tests', () => {
     expect(fs.existsSync(cacheFile)).toBe(true)
     
     // Verify we can read large cache back quickly
-    global.fetch.mockRejectedValue(new Error('Network error'))
+    fetchMock.mockNetworkError('Network error')
     const start2 = Date.now()
     const result2 = await versionController.checkVersionStatus()
     const duration2 = Date.now() - start2
@@ -336,7 +317,7 @@ describe('Version Control Integration Tests', () => {
 
   test('should clean up properly on errors', async () => {
     // Simulate network error during fetch
-    global.fetch.mockRejectedValue(new Error('Network timeout'))
+    fetchMock.mockNetworkError('Network timeout')
 
     const result = await versionController.checkVersionStatus()
     
