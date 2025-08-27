@@ -21,6 +21,7 @@ const api = {
   openExternalUrl: (url: string) => ipcRenderer.invoke('open-external-url', url),
   trackAnalyticsEvent: (eventData: { action: string; category: string; label?: string; value?: number }) => 
     ipcRenderer.invoke('track-analytics-event', eventData),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),

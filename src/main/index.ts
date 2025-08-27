@@ -410,6 +410,22 @@ class TrayScanner {
       }
     })
 
+    ipcMain.handle('get-app-version', async () => {
+      try {
+        return {
+          success: true,
+          version: app.getVersion()
+        }
+      } catch (error) {
+        console.error('Failed to get app version:', error)
+        return {
+          success: false,
+          error: (error as Error).message,
+          version: '1.0.0' // fallback version
+        }
+      }
+    })
+
     ipcMain.on('capture-complete', () => {
       if (this.captureWindow) {
         this.captureWindow.close()

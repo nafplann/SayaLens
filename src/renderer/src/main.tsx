@@ -57,9 +57,18 @@ function PageTracker() {
 // Main app component
 function App() {
   useEffect(() => {
-    // Initialize Google Analytics when app starts
-    initializeAnalytics()
-    Analytics.appStarted()
+    // Initialize Google Analytics with version tracking when app starts
+    const initAnalytics = async () => {
+      try {
+        await initializeAnalytics()
+        Analytics.appStarted()
+        Analytics.appVersionInfo()
+      } catch (error) {
+        console.error('Failed to initialize analytics:', error)
+      }
+    }
+    
+    initAnalytics()
 
     // Track app close when component unmounts
     return () => {
