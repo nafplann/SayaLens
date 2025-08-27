@@ -16,13 +16,14 @@ Built with privacy in mind, all processing happens locally on your Mac. Whether 
 ## ✨ Features
 
 - 🔍 **QR Code Scanning**: Quickly scan QR codes from any part of your screen
-- 📝 **OCR Text Extraction**: Extract text from images with high accuracy
+- 📝 **Fast OCR**: Instant text recognition and extraction from images
 - 🖥️ **Screen Area Selection**: Intuitive drag-to-select interface with React UI
 - 🍎 **Native macOS Integration**: Lives in your system tray for instant access
 - 📋 **Clipboard Integration**: Automatically copy results to clipboard
-- 🔐 **Privacy First**: All processing happens locally on your device
-- ⚡ **Fast Processing**: Optimized with electron-vite for quick results
-- 🎨 **Beautiful UI**: Modern shadcn/ui components with Tailwind CSS
+- 🔐 **Privacy First**: All processing happens locally on your device - no data leaves your machine
+- ⚡ **Lightweight**: Minimal system resources usage for optimal performance
+- 🎨 **Clean UI**: Beautiful, intuitive interface with modern shadcn/ui components
+- 🌍 **Multi-Language Support**: OCR supports 14+ languages including English, Arabic, Chinese, and more
 - 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to macOS appearance
 - 🔷 **TypeScript**: Full type safety and better development experience
 
@@ -40,6 +41,7 @@ Built with privacy in mind, all processing happens locally on your Mac. Whether 
 If you find SayaLens useful, consider supporting the development:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/nafplann)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-EA4AAA.svg?logo=github&logoColor=white)](https://github.com/nafplann)
 
 ## 🚀 Quick Start
 
@@ -53,7 +55,7 @@ If you find SayaLens useful, consider supporting the development:
 
 1. **Clone the repository**
    ```bash
-   git clone git@github.com:nafplann/SayaLens.git
+   git clone https://github.com/nafplann/SayaLens.git
    cd SayaLens
    ```
 
@@ -112,8 +114,17 @@ If you find SayaLens useful, consider supporting the development:
 
 ### Keyboard Shortcuts
 
+#### Global Shortcuts (work system-wide)
+- **Cmd+Shift+1**: Start QR code scanning
+- **Cmd+Shift+2**: Start text capture (OCR)
+
+#### During Capture
 - **Escape**: Cancel current selection
-- **Click Copy**: Copy result to clipboard (in the result window)
+- **Drag & Release**: Select area and process
+
+#### In Result Window
+- **Click Copy**: Copy result to clipboard
+- **Copy and Close**: Copy result and close the window
 
 ## 🛠️ Development
 
@@ -147,17 +158,19 @@ src/
         ├── main.tsx        # React app entry point
         ├── pages/          # React pages/components
         │   ├── Capture.tsx # Screen capture interface
-        │   └── Result.tsx  # Results display
+        │   ├── Result.tsx  # Results display
+        │   └── About.tsx   # About page with developer info and support links
         ├── components/     # Reusable React components
-        │   └── ui/         # shadcn/ui components
+        │   └── ui/         # shadcn/ui components (Button, Card, Select, Badge, Separator, etc.)
         ├── lib/            # Utilities and helpers
         ├── assets/         # CSS and other assets
         └── types/          # TypeScript type definitions
 
 resources/                  # App assets
-├── appicon.png            # Application icon
+├── appicon.png            # Application icon (used in About page)
 ├── tray-icon-light.png    # Tray icon for light mode
-└── tray-icon-dark.png     # Tray icon for dark mode
+├── tray-icon-dark.png     # Tray icon for dark mode
+└── demo.gif               # Demo animation for README
 
 tests/                     # Unit tests
 └── modules/              # Tests for core modules
@@ -191,14 +204,25 @@ The application follows a modern Electron + React architecture with TypeScript:
 
 ### OCR Settings
 
-The OCR processor uses English language models by default. To modify:
+The OCR processor supports multiple languages that can be selected directly in the result window UI. Supported languages include:
 
-```typescript
-// In src/main/modules/ocrProcessor.ts
-this.worker = await createWorker('eng'); // Change language code here
-```
+- **English** (`eng`) - Default
+- **Arabic** (`ara`)
+- **Chinese Simplified** (`chi_sim`)
+- **Chinese Traditional** (`chi_tra`)
+- **French** (`fra`)
+- **German** (`deu`)
+- **Hindi** (`hin`)
+- **Italian** (`ita`)
+- **Japanese** (`jpn`)
+- **Korean** (`kor`)
+- **Portuguese** (`por`)
+- **Russian** (`rus`)
+- **Spanish** (`spa`)
+- **Thai** (`tha`)
+- **Vietnamese** (`vie`)
 
-Supported languages include: `eng`, `fra`, `deu`, `spa`, `chi_sim`, `chi_tra`, etc.
+The language preference is automatically saved and synced between the renderer and main process for subsequent OCR operations.
 
 ### Build Configuration
 
@@ -273,7 +297,7 @@ The application automatically switches between these icons based on the system a
 
 **Solution**:
 1. Open System Preferences/Settings
-2. Go to Privacy & Security → Screen Recording  
+2. Go to Privacy & Security → Screen Recording
 3. Add SayaLens and enable it
 4. Restart the application
 
@@ -362,4 +386,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for macOS users who need quick access to modern screen scanning tools.**
+**Made with ❤️ from Makassar, Indonesia for users who need quick access to modern screen scanning tools.**
