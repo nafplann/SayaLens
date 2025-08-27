@@ -116,5 +116,21 @@ export const Analytics = {
   
   // Tray interactions
   trayMenuOpened: () => trackEvent('tray_menu_opened', 'tray'),
-  trayActionUsed: (action: string) => trackEvent('tray_action_used', 'tray', action)
+  trayActionUsed: (action: string) => trackEvent('tray_action_used', 'tray', action),
+  
+  // Version control events
+  versionCheckPerformed: (status: string) => trackEvent('version_check_performed', 'app_lifecycle', status),
+  versionBlocked: (version: string) => trackEvent('version_blocked', 'app_lifecycle', version),
+  forceUpdateRequired: (version: string) => trackEvent('force_update_required', 'app_lifecycle', version),
+  forceUpdateContinuedOffline: (version: string) => trackEvent('force_update_continued_offline', 'app_lifecycle', version),
+  versionDeprecatedWarning: (version: string) => trackEvent('version_deprecated_warning', 'app_lifecycle', version),
+  manualUpdateCheck: () => trackEvent('manual_update_check', 'user_actions', 'tray_menu'),
+  updateDownloadInitiated: (version: string) => trackEvent('update_download_initiated', 'app_updates', version),
+  updateNotificationShown: (version: string) => trackEvent('update_notification_shown', 'app_updates', version),
+  updateCheckFailed: (error: string) => trackEvent('update_check_failed', 'app_lifecycle', error),
+  offlineModeDetected: (cacheAge: number) => trackEvent('offline_mode_detected', 'app_lifecycle', 'cache_age', cacheAge),
+  networkRestored: () => trackEvent('network_restored', 'app_lifecycle'),
+  killSwitchActivated: () => trackEvent('kill_switch_activated', 'app_lifecycle'),
+  configCacheHit: () => trackEvent('config_cache_hit', 'app_lifecycle'),
+  configCacheMiss: () => trackEvent('config_cache_miss', 'app_lifecycle')
 }

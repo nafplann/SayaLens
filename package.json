@@ -16,7 +16,11 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:version": "jest tests/versionControl.test.js",
+    "test:integration": "jest tests/integration/",
+    "test:unit": "jest tests/ --ignore-pattern tests/integration/",
+    "test:ci": "jest --ci --coverage --watchAll=false"
   },
   "build": {
     "appId": "com.nafplann.sayalens",
@@ -99,9 +103,33 @@
     "testMatch": [
       "**/tests/**/*.test.js"
     ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "collectCoverageFrom": [
       "src/**/*.js",
-      "!src/**/*.test.js"
-    ]
+      "src/**/*.ts",
+      "out/**/*.js",
+      "!src/**/*.test.js",
+      "!out/**/*.test.js",
+      "!src/renderer/index.html",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 75,
+        "functions": 75,
+        "lines": 75,
+        "statements": 75
+      }
+    },
+    "testTimeout": 10000,
+    "verbose": true
   }
 }
