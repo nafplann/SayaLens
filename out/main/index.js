@@ -300,22 +300,20 @@ After enabling the permission, try again.`,
   getTrayIconPath() {
     const isDarkMode = electron.nativeTheme.shouldUseDarkColors;
     const iconName = isDarkMode ? "tray-icon-light.png" : "tray-icon-dark.png";
-    return path.join(process.cwd(), "resources", iconName);
+    return path.join(electron.app.getAppPath(), "resources", iconName);
   }
   /**
    * Create a tray icon image with theme awareness and fallback handling
    */
   createTrayIconImage() {
     const fallbackIconData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAaCxAAAAsQHGLUmNAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAVBJREFUSInF1bEuBFEUxvEfUWyzRKMgsSKiIEGvVSoUKgkPQAXQKjyDJyBEQSGRrbR6JBQiEiIkGkIhFEuxd3bHZGzs7Gx8yeROzj33/03uOXMvbVZH7L2EORQSOUe4+GX9OGYTsXcc4jYeLOEFX0mngrUGH7gWcpJrngOzptUwMdYA9feNBdYrdIVgTxgv0YkFDDQJvsduYNSYXSmJC9huEh7pK5jU1JmSNJIRDqPJQGTwircWwEm9BWZtizZxkKPBFB7iBp/qfXuD44zgm8TYfkV/8jTWpRc9iyrYwElewP9TR0psCYsZedvYigeiLiqgX7X6w5jJaHASxiE84iOqwTJOM0LTdI4V6l3TjWKOBsXATG3L6xbAV8lA2mm6o9rHE03Cz7D322TbLpxIJdVrLs8rc5D6Ft1iEvPoiwEqKDcwKKPXz1o+YR93Ddblp2/k9U7YtyTYYgAAAABJRU5ErkJggg==";
-    if (process.platform === "darwin") {
-      try {
-        const iconPath = this.getTrayIconPath();
-        return electron.nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-      } catch (error) {
-        console.warn("Failed to load theme-aware tray icon, using fallback:", error.message);
-      }
+    try {
+      const iconPath = this.getTrayIconPath();
+      return electron.nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    } catch (error) {
+      console.warn("Failed to load theme-aware tray icon, using fallback:", error.message);
+      return electron.nativeImage.createFromDataURL(fallbackIconData).resize({ width: 16, height: 16 });
     }
-    return electron.nativeImage.createFromDataURL(fallbackIconData).resize({ width: 16, height: 16 });
   }
   /**
    * Set up theme change listener for macOS
