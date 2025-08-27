@@ -3,7 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {Copy, Check, Image as ImageIcon, AlertCircle, QrCode, FileText} from 'lucide-react';
+import {Copy, Check, Image as ImageIcon, AlertCircle, QrCode, FileText, ChevronDown} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu.tsx";
 
 interface ResultData {
   success: boolean
@@ -89,7 +95,7 @@ export default function OCRResultPage() {
       }
 
       const isOCRMode = resultData.mode === 'ocr' || (!resultData.mode && !resultData.data)
-      
+
       try {
         // First, change the language
         const languageResult = await window.api?.setOCRLanguage(selectedLanguage)
@@ -102,7 +108,7 @@ export default function OCRResultPage() {
         // If we have a captured image and it's OCR mode, reprocess it
         if (isOCRMode && resultData.capturedImage) {
           setIsReprocessing(true)
-          
+
           // Extract the actual file path from the captured image
           let imagePath = resultData.capturedImage
           if (imagePath.startsWith('data:image/png;base64,')) {
@@ -116,7 +122,7 @@ export default function OCRResultPage() {
 
           console.log('Reprocessing image with new language:', imagePath)
           const reprocessResult = await window.api?.reprocessOCR(imagePath)
-          
+
           if (reprocessResult && reprocessResult.success) {
             // Update the result data with new OCR results
             setResultData(prev => prev ? {
@@ -129,7 +135,7 @@ export default function OCRResultPage() {
           } else {
             console.error('Reprocessing failed:', reprocessResult?.error)
           }
-          
+
           setIsReprocessing(false)
         }
       } catch (error) {
@@ -147,17 +153,17 @@ export default function OCRResultPage() {
     console.log(`Language preference saved: ${selectedLanguage}`)
   }, [selectedLanguage])
 
-  // const handleClose = () => {
-  //   window.api?.closeResult()
-  // }
-
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (text: string, close: boolean) => {
     try {
       await window.api?.copyToClipboard(text)
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (err) {
       // toast
+    } finally {
+      if (close) {
+        window.api?.closeResult()
+      }
     }
   };
 
@@ -219,23 +225,35 @@ export default function OCRResultPage() {
                         </SelectContent>
                       </Select>
                     )}
-                    <Button
-                        onClick={() => handleCopy(displayText)}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 ml-2"
-                    >
-                      {copied ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2" />
-                            Copied!
-                          </>
-                      ) : (
-                          <>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy Text
-                          </>
-                      )}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 ml-2"
+                        >
+                          {copied ? (
+                              <>
+                                <Check className="w-4 h-4 mr-2" />
+                                Copied!
+                              </>
+                          ) : (
+                              <>
+                                <Copy className="w-4 h-4 mr-2" />
+                                Copy
+                                <ChevronDown className="w-3 h-3 ml-1" />
+                              </>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuItem onClick={() => handleCopy(displayText, false)} className="cursor-pointer">
+                          Copy text
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleCopy(displayText, true)} className="cursor-pointer">
+                          Copy and close
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardTitle>
               </CardHeader>

@@ -14,6 +14,7 @@ import {
   shell,
   protocol,
   net,
+  Notification,
 } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
@@ -61,6 +62,9 @@ class TrayScanner {
 
     // Set up IPC handlers
     this.setupIpcHandlers()
+
+    // Set up global keyboard shortcuts
+    this.setupGlobalShortcuts()
 
     // Prevent app from quitting when all windows are closed
     app.on('window-all-closed', () => {
@@ -166,14 +170,31 @@ class TrayScanner {
     this.tray = new Tray(icon)
     this.tray.setToolTip('SayaLens - A text grabber')
 
+    // Platform-specific modifier key display
+    const modifierDisplay = process.platform === 'darwin' ? 'Cmd' : 'Ctrl'
+    
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'Capture Text',
+        label: `Capture Text`,
         click: () => this.startOCR()
       },
       {
-        label: 'Scan QR',
+        label: `Scan QR`,
         click: () => this.startQRScan()
+      },
+      { type: 'separator' },
+      {
+        label: 'Global Shortcuts',
+        submenu: [
+          {
+            label: `${modifierDisplay}+Shift+1 - Scan QR Code`,
+            enabled: false
+          },
+          {
+            label: `${modifierDisplay}+Shift+2 - Capture Text`,
+            enabled: false
+          }
+        ]
       },
       { type: 'separator' },
       {
@@ -351,6 +372,40 @@ class TrayScanner {
         this.resultWindow = null
       }
     })
+  }
+
+  private setupGlobalShortcuts(): void {
+    // Platform-specific modifier key (Cmd on macOS, Ctrl on Windows/Linux)
+    const modifier = process.platform === 'darwin' ? 'CommandOrControl' : 'Ctrl'
+
+    // Register global shortcut for text capture (Cmd/Ctrl + Shift + 1)
+    const ocrShortcut = `${modifier}+Shift+1`
+    const registerOCRResult = globalShortcut.register(ocrShortcut, () => {
+      console.log(`Global shortcut triggered: ${ocrShortcut} (Text Capture)`)
+      this.startOCR()
+    })
+
+    if (registerOCRResult) {
+      console.log(`Successfully registered global shortcut: ${ocrShortcut} for text capture`)
+    } else {
+      console.error(`Failed to register global shortcut: ${ocrShortcut} for text capture - shortcut may already be in use`)
+    }
+
+    // Register global shortcut for QR scanning (Cmd/Ctrl + Shift + 2)
+    const qrShortcut = `${modifier}+Shift+2`
+    const registerQRResult = globalShortcut.register(qrShortcut, () => {
+      console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`)
+      this.startQRScan()
+    })
+
+    if (registerQRResult) {
+      console.log(`Successfully registered global shortcut: ${qrShortcut} for QR scanning`)
+    } else {
+      console.error(`Failed to register global shortcut: ${qrShortcut} for QR scanning - shortcut may already be in use`)
+    }
+
+    // Log completion of shortcut registration
+    console.log('Global keyboard shortcuts setup completed')
   }
 
   private async startQRScan(): Promise<void> {
