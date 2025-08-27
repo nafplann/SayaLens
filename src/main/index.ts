@@ -1,27 +1,27 @@
-import { 
-  app, 
-  BrowserWindow, 
-  Tray, 
-  Menu, 
-  ipcMain, 
-  globalShortcut, 
-  screen, 
-  desktopCapturer, 
-  clipboard, 
-  nativeImage, 
-  nativeTheme, 
-  dialog, 
-  shell,
-  protocol,
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  desktopCapturer,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  nativeImage,
+  nativeTheme,
   net,
+  protocol,
+  screen,
+  shell,
+  Tray,
 } from 'electron'
-import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import {join} from 'path'
+import {is} from '@electron-toolkit/utils'
 import ScreenCapture from './modules/screenCapture.js'
 import QRScanner from './modules/qrScanner.js'
 import OCRProcessor from './modules/ocrProcessor.js'
-import { tmpdir } from 'node:os'
-import { writeFileSync } from 'node:fs'
+import {tmpdir} from 'node:os'
+import {writeFileSync} from 'node:fs'
 
 interface CaptureResult {
   success: boolean
@@ -42,6 +42,24 @@ class TrayScanner {
   private resultWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
   private storedLanguage: string = 'eng'
+
+  /**
+   * Send analytics event to any open renderer window
+   */
+  private sendAnalyticsEvent(action: string, category: string, label?: string, value?: number): void {
+    const eventData = { action, category, label, value }
+    
+    // Send to all open windows that might have analytics
+    const windows = [this.resultWindow, this.aboutWindow, this.captureWindow].filter(Boolean)
+    
+    windows.forEach(window => {
+      if (window && !window.isDestroyed()) {
+        window.webContents.send('track-analytics', eventData)
+      }
+    })
+    
+    console.log('Analytics event sent from main process:', eventData)
+  }
 
   async init(): Promise<void> {
     // Initialize modules
@@ -176,11 +194,19 @@ class TrayScanner {
     const contextMenu = Menu.buildFromTemplate([
       {
         label: `Capture Text`,
-        click: () => this.startOCR()
+        click: () => {
+          console.log('Tray action: Capture Text')
+          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Capture Text')
+          this.startOCR()
+        }
       },
       {
         label: `Scan QR`,
-        click: () => this.startQRScan()
+        click: () => {
+          console.log('Tray action: Scan QR')
+          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Scan QR')
+          this.startQRScan()
+        }
       },
       {
         label: 'Global Shortcuts',
@@ -198,7 +224,11 @@ class TrayScanner {
       { type: 'separator' },
       {
         label: 'About SayaLens',
-        click: () => this.showAboutWindow()
+        click: () => {
+          console.log('Tray action: About SayaLens')
+          this.sendAnalyticsEvent('tray_action_used', 'tray', 'About SayaLens')
+          this.showAboutWindow()
+        }
       },
       {
         label: 'Exit',
@@ -213,10 +243,9 @@ class TrayScanner {
 
   private setupIpcHandlers(): void {
     ipcMain.handle('get-screen-sources', async () => {
-      const sources = await desktopCapturer.getSources({
+      return await desktopCapturer.getSources({
         types: ['screen']
       })
-      return sources
     })
 
     ipcMain.handle('process-qr', async (_event, imageData) => {
@@ -368,6 +397,17 @@ class TrayScanner {
       }
     })
 
+    ipcMain.handle('track-analytics-event', async (_event, eventData: { action: string, category: string, label?: string, value?: number }) => {
+      try {
+        // Log analytics event for debugging
+        console.log('Analytics event:', eventData)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to track analytics event:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
     ipcMain.on('capture-complete', () => {
       if (this.captureWindow) {
         this.captureWindow.close()
@@ -395,6 +435,7 @@ class TrayScanner {
     const ocrShortcut = `${modifier}+Shift+1`
     const registerOCRResult = globalShortcut.register(ocrShortcut, () => {
       console.log(`Global shortcut triggered: ${ocrShortcut} (Text Capture)`)
+      this.sendAnalyticsEvent('global_shortcut_used', 'shortcuts', ocrShortcut)
       this.startOCR()
     })
 
@@ -408,6 +449,7 @@ class TrayScanner {
     const qrShortcut = `${modifier}+Shift+2`
     const registerQRResult = globalShortcut.register(qrShortcut, () => {
       console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`)
+      this.sendAnalyticsEvent('global_shortcut_used', 'shortcuts', qrShortcut)
       this.startQRScan()
     })
 

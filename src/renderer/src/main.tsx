@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import './assets/globals.css'
 import Capture from './pages/Capture'
 import Result from './pages/Result'
 import About from './pages/About'
+import { initializeAnalytics, Analytics } from './lib/analytics'
 
 // Main menu component
 function MainMenu() {
@@ -41,10 +42,34 @@ function MainMenu() {
   )
 }
 
+// Analytics page tracker component
+function PageTracker() {
+  const location = useLocation()
+
+  useEffect(() => {
+    // Track page view when location changes
+    Analytics.pageVisited(location.pathname)
+  }, [location])
+
+  return null
+}
+
 // Main app component
 function App() {
+  useEffect(() => {
+    // Initialize Google Analytics when app starts
+    initializeAnalytics()
+    Analytics.appStarted()
+
+    // Track app close when component unmounts
+    return () => {
+      Analytics.appClosed()
+    }
+  }, [])
+
   return (
     <Router>
+      <PageTracker />
       <Routes>
         <Route path="/" element={<MainMenu />} />
         <Route path="/capture" element={<Capture />} />

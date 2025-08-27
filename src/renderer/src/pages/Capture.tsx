@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Loader2 } from 'lucide-react'
+import { Analytics } from '../lib/analytics'
 
 interface CaptureState {
   isSelecting: boolean
@@ -38,6 +39,13 @@ export default function Capture() {
     if (window.api?.onInitCapture) {
       window.api.onInitCapture((_event: any, data: { mode: 'qr' | 'ocr' }) => {
         setState(prev => ({ ...prev, mode: data.mode }))
+        
+        // Track capture start
+        if (data.mode === 'qr') {
+          Analytics.qrCaptureStarted()
+        } else {
+          Analytics.ocrCaptureStarted()
+        }
       })
     }
 
@@ -112,9 +120,21 @@ export default function Capture() {
       }
 
       if (result?.success) {
+        // Track successful capture
+        if (state.mode === 'qr') {
+          Analytics.qrCaptureCompleted(true)
+        } else {
+          Analytics.ocrCaptureCompleted(true)
+        }
         window.api?.showResult(result)
         window.api?.captureComplete()
       } else {
+        // Track failed capture
+        if (state.mode === 'qr') {
+          Analytics.qrCaptureCompleted(false)
+        } else {
+          Analytics.ocrCaptureCompleted(false)
+        }
         window.api?.showResult({
           success: false,
           error: result?.error || 'Processing failed',
@@ -124,6 +144,14 @@ export default function Capture() {
       }
     } catch (error) {
       console.error('Capture processing failed:', error)
+      
+      // Track error in capture
+      if (state.mode === 'qr') {
+        Analytics.qrCaptureCompleted(false)
+      } else {
+        Analytics.ocrCaptureCompleted(false)
+      }
+      
       window.api?.showResult({
         success: false,
         error: 'An unexpected error occurred',

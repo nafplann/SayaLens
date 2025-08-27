@@ -226,6 +226,19 @@ class TrayScanner {
   resultWindow = null;
   aboutWindow = null;
   storedLanguage = "eng";
+  /**
+   * Send analytics event to any open renderer window
+   */
+  sendAnalyticsEvent(action, category, label, value) {
+    const eventData = { action, category, label, value };
+    const windows = [this.resultWindow, this.aboutWindow, this.captureWindow].filter(Boolean);
+    windows.forEach((window) => {
+      if (window && !window.isDestroyed()) {
+        window.webContents.send("track-analytics", eventData);
+      }
+    });
+    console.log("Analytics event sent from main process:", eventData);
+  }
   async init() {
     this.screenCapture = new ScreenCapture();
     this.qrScanner = new QRScanner();
@@ -334,11 +347,19 @@ After enabling the permission, try again.`,
     const contextMenu = electron.Menu.buildFromTemplate([
       {
         label: `Capture Text`,
-        click: () => this.startOCR()
+        click: () => {
+          console.log("Tray action: Capture Text");
+          this.sendAnalyticsEvent("tray_action_used", "tray", "Capture Text");
+          this.startOCR();
+        }
       },
       {
         label: `Scan QR`,
-        click: () => this.startQRScan()
+        click: () => {
+          console.log("Tray action: Scan QR");
+          this.sendAnalyticsEvent("tray_action_used", "tray", "Scan QR");
+          this.startQRScan();
+        }
       },
       {
         label: "Global Shortcuts",
@@ -356,7 +377,11 @@ After enabling the permission, try again.`,
       { type: "separator" },
       {
         label: "About SayaLens",
-        click: () => this.showAboutWindow()
+        click: () => {
+          console.log("Tray action: About SayaLens");
+          this.sendAnalyticsEvent("tray_action_used", "tray", "About SayaLens");
+          this.showAboutWindow();
+        }
       },
       {
         label: "Exit",
@@ -494,6 +519,15 @@ After enabling the permission, try again.`,
         return { success: false, error: error.message };
       }
     });
+    electron.ipcMain.handle("track-analytics-event", async (_event, eventData) => {
+      try {
+        console.log("Analytics event:", eventData);
+        return { success: true };
+      } catch (error) {
+        console.error("Failed to track analytics event:", error);
+        return { success: false, error: error.message };
+      }
+    });
     electron.ipcMain.on("capture-complete", () => {
       if (this.captureWindow) {
         this.captureWindow.close();
@@ -515,6 +549,7 @@ After enabling the permission, try again.`,
     const ocrShortcut = `${modifier}+Shift+1`;
     const registerOCRResult = electron.globalShortcut.register(ocrShortcut, () => {
       console.log(`Global shortcut triggered: ${ocrShortcut} (Text Capture)`);
+      this.sendAnalyticsEvent("global_shortcut_used", "shortcuts", ocrShortcut);
       this.startOCR();
     });
     if (registerOCRResult) {
@@ -525,6 +560,7 @@ After enabling the permission, try again.`,
     const qrShortcut = `${modifier}+Shift+2`;
     const registerQRResult = electron.globalShortcut.register(qrShortcut, () => {
       console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`);
+      this.sendAnalyticsEvent("global_shortcut_used", "shortcuts", qrShortcut);
       this.startQRScan();
     });
     if (registerQRResult) {
