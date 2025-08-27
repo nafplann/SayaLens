@@ -332,11 +332,11 @@ After enabling the permission, try again.`,
     const modifierDisplay = process.platform === "darwin" ? "Cmd" : "Ctrl";
     const contextMenu = electron.Menu.buildFromTemplate([
       {
-        label: `Capture Text (${modifierDisplay}+Shift+2)`,
+        label: `Capture Text`,
         click: () => this.startOCR()
       },
       {
-        label: `Scan QR (${modifierDisplay}+Shift+1)`,
+        label: `Scan QR`,
         click: () => this.startQRScan()
       },
       { type: "separator" },
@@ -499,41 +499,25 @@ After enabling the permission, try again.`,
   }
   setupGlobalShortcuts() {
     const modifier = process.platform === "darwin" ? "CommandOrControl" : "Ctrl";
-    const qrShortcut = `${modifier}+Shift+1`;
-    const registerQRResult = electron.globalShortcut.register(qrShortcut, () => {
-      console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`);
-      if (electron.Notification.isSupported()) {
-        new electron.Notification({
-          title: "SayaLens QR Scanner",
-          body: "Starting QR code scan...",
-          icon: path.join(process.cwd(), "resources", "icon.png"),
-          silent: true
-        }).show();
-      }
-      this.startQRScan();
-    });
-    if (registerQRResult) {
-      console.log(`Successfully registered global shortcut: ${qrShortcut} for QR scanning`);
-    } else {
-      console.error(`Failed to register global shortcut: ${qrShortcut} for QR scanning - shortcut may already be in use`);
-    }
-    const ocrShortcut = `${modifier}+Shift+2`;
+    const ocrShortcut = `${modifier}+Shift+1`;
     const registerOCRResult = electron.globalShortcut.register(ocrShortcut, () => {
       console.log(`Global shortcut triggered: ${ocrShortcut} (Text Capture)`);
-      if (electron.Notification.isSupported()) {
-        new electron.Notification({
-          title: "SayaLens Text Capture",
-          body: "Starting text capture...",
-          icon: path.join(process.cwd(), "resources", "icon.png"),
-          silent: true
-        }).show();
-      }
       this.startOCR();
     });
     if (registerOCRResult) {
       console.log(`Successfully registered global shortcut: ${ocrShortcut} for text capture`);
     } else {
       console.error(`Failed to register global shortcut: ${ocrShortcut} for text capture - shortcut may already be in use`);
+    }
+    const qrShortcut = `${modifier}+Shift+2`;
+    const registerQRResult = electron.globalShortcut.register(qrShortcut, () => {
+      console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`);
+      this.startQRScan();
+    });
+    if (registerQRResult) {
+      console.log(`Successfully registered global shortcut: ${qrShortcut} for QR scanning`);
+    } else {
+      console.error(`Failed to register global shortcut: ${qrShortcut} for QR scanning - shortcut may already be in use`);
     }
     console.log("Global keyboard shortcuts setup completed");
   }
