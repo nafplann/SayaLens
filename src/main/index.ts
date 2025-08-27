@@ -143,18 +143,16 @@ class TrayScanner {
   private createTrayIconImage(): Electron.NativeImage {
     const fallbackIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAaCxAAAAsQHGLUmNAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAVBJREFUSInF1bEuBFEUxvEfUWyzRKMgsSKiIEGvVSoUKgkPQAXQKjyDJyBEQSGRrbR6JBQiEiIkGkIhFEuxd3bHZGzs7Gx8yeROzj33/03uOXMvbVZH7L2EORQSOUe4+GX9OGYTsXcc4jYeLOEFX0mngrUGH7gWcpJrngOzptUwMdYA9feNBdYrdIVgTxgv0YkFDDQJvsduYNSYXSmJC9huEh7pK5jU1JmSNJIRDqPJQGTwircWwEm9BWZtizZxkKPBFB7iBp/qfXuD44zgm8TYfkV/8jTWpRc9iyrYwElewP9TR0psCYsZedvYigeiLiqgX7X6w5jJaHASxiE84iOqwTJOM0LTdI4V6l3TjWKOBsXATG3L6xbAV8lA2mm6o9rHE03Cz7D322TbLpxIJdVrLs8rc5D6Ft1iEvPoiwEqKDcwKKPXz1o+YR93Ddblp2/k9U7YtyTYYgAAAABJRU5ErkJggg=='
 
-    // For macOS, try to use theme-aware icons
-    if (process.platform === 'darwin') {
-      try {
-        const iconPath = this.getTrayIconPath()
-        return nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
-      } catch (error) {
-        console.warn('Failed to load theme-aware tray icon, using fallback:', (error as Error).message)
-      }
+    // Try to use theme-aware icons
+    try {
+      const iconPath = this.getTrayIconPath()
+      return nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    } catch (error) {
+      console.warn('Failed to load theme-aware tray icon, using fallback:', (error as Error).message)
+
+      // Use fallback icon for non-macOS platforms or when theme-specific icons fail
+      return nativeImage.createFromDataURL(fallbackIconData).resize({ width: 16, height: 16 })
     }
-    
-    // Use fallback icon for non-macOS platforms or when theme-specific icons fail
-    return nativeImage.createFromDataURL(fallbackIconData).resize({ width: 16, height: 16 })
   }
 
   /**
@@ -511,9 +509,9 @@ class TrayScanner {
 
     // Load the capture React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.captureWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/capture')
+      this.captureWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/capture'))
     } else {
-      this.captureWindow.loadFile(join(__dirname, '../renderer/capture.html'))
+      this.captureWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/capture'))
     }
 
     // Add error handling for preload script
@@ -555,9 +553,9 @@ class TrayScanner {
 
     // Load the result React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.resultWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/result')
+      this.resultWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/result'))
     } else {
-      this.resultWindow.loadFile(join(__dirname, '../renderer/result.html'))
+      this.resultWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/result'))
     }
 
     this.resultWindow.webContents.once('did-finish-load', () => {
@@ -595,9 +593,9 @@ class TrayScanner {
 
     // Load the about React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.aboutWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/about')
+      this.aboutWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/about'))
     } else {
-      this.aboutWindow.loadFile(join(__dirname, '../renderer/about.html'))
+      this.aboutWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/about'))
     }
 
     this.aboutWindow.on('closed', () => {

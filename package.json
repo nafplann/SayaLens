@@ -23,10 +23,10 @@
     "productName": "SayaLens",
     "directories": {
       "output": "dist",
-      "buildResources": "build"
+      "buildResources": "out"
     },
     "files": [
-      "dist-electron",
+      "out/**/*",
       "resources/**/*"
     ],
     "mac": {

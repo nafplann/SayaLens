@@ -394,10 +394,9 @@ After enabling the permission, try again.`,
   }
   setupIpcHandlers() {
     electron.ipcMain.handle("get-screen-sources", async () => {
-      const sources = await electron.desktopCapturer.getSources({
+      return await electron.desktopCapturer.getSources({
         types: ["screen"]
       });
-      return sources;
     });
     electron.ipcMain.handle("process-qr", async (_event, imageData) => {
       return await this.qrScanner?.scanImage(imageData);
@@ -608,9 +607,9 @@ After enabling the permission, try again.`,
     });
     console.log("captureSize: ", this.captureWindow.getContentSize());
     if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-      this.captureWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/capture");
+      this.captureWindow.loadURL(path.join(process.env["ELECTRON_RENDERER_URL"], "#/capture"));
     } else {
-      this.captureWindow.loadFile(path.join(__dirname, "../renderer/capture.html"));
+      this.captureWindow.loadURL(path.join("file://", __dirname, "../renderer/index.html#/capture"));
     }
     this.captureWindow.webContents.on("preload-error", (_event, preloadPath, error) => {
       console.error("Preload script error:", preloadPath);
@@ -643,9 +642,9 @@ After enabling the permission, try again.`,
       }
     });
     if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-      this.resultWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/result");
+      this.resultWindow.loadURL(path.join(process.env["ELECTRON_RENDERER_URL"], "#/result"));
     } else {
-      this.resultWindow.loadFile(path.join(__dirname, "../renderer/result.html"));
+      this.resultWindow.loadURL(path.join("file://", __dirname, "../renderer/index.html#/result"));
     }
     this.resultWindow.webContents.once("did-finish-load", () => {
       this.resultWindow?.webContents.send("show-data", data);
@@ -675,9 +674,9 @@ After enabling the permission, try again.`,
       title: "About SayaLens"
     });
     if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-      this.aboutWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/about");
+      this.aboutWindow.loadURL(path.join(process.env["ELECTRON_RENDERER_URL"], "#/about"));
     } else {
-      this.aboutWindow.loadFile(path.join(__dirname, "../renderer/about.html"));
+      this.aboutWindow.loadURL(path.join("file://", __dirname, "../renderer/index.html#/about"));
     }
     this.aboutWindow.on("closed", () => {
       this.aboutWindow = null;
