@@ -18,6 +18,7 @@ Built with privacy in mind, all processing happens locally on your Mac. Whether 
 - 🔍 **QR Code Scanning**: Quickly scan QR codes from any part of your screen
 - 📝 **Fast OCR**: Instant text recognition and extraction from images
 - 🖥️ **Screen Area Selection**: Intuitive drag-to-select interface with React UI
+- 🖼️ **Multi-Display Support**: Automatically detects and captures from the active monitor where your cursor is located
 - 🍎 **Native macOS Integration**: Lives in your system tray for instant access
 - 📋 **Clipboard Integration**: Automatically copy results to clipboard
 - 🔐 **Privacy First**: All processing happens locally on your device - no data leaves your machine
@@ -112,6 +113,21 @@ If you find SayaLens useful, consider supporting the development:
 3. Drag to select the text area
 4. Release to extract - the text will be displayed with confidence score in a beautiful interface
 
+### Multi-Display Support
+
+SayaLens automatically detects which monitor you're actively using and provides seamless multi-display support:
+
+- **Smart Display Detection**: The capture window automatically appears on the display where your mouse cursor is located
+- **Accurate Screen Capture**: Captures content from the correct monitor, even with different resolutions and scaling factors
+- **Consistent Window Positioning**: Result and about windows appear on the same display where you performed the capture
+- **Cross-Monitor Compatibility**: Works perfectly with mixed display setups (different resolutions, orientations, and DPI settings)
+
+**How it works:**
+1. When you trigger a capture (via menu or keyboard shortcut), SayaLens detects your cursor position
+2. The capture overlay appears on the active monitor
+3. Screen capture is performed from the correct display with proper scaling
+4. Result windows appear on the same monitor for a consistent workflow
+
 ### Keyboard Shortcuts
 
 #### Global Shortcuts (work system-wide)
@@ -201,6 +217,24 @@ The application follows a modern Electron + React architecture with TypeScript:
 - **TypeScript**: Type safety throughout the application
 
 ## 🔧 Configuration
+
+### Multi-Display Settings
+
+SayaLens automatically handles multi-display configurations without requiring manual setup:
+
+- **Automatic Detection**: No configuration needed - the app automatically detects all connected displays
+- **DPI Scaling**: Properly handles high-DPI displays (Retina) and mixed DPI setups
+- **Resolution Independence**: Works with displays of different resolutions and orientations
+- **Primary vs Secondary**: Treats all displays equally - captures work from any monitor
+- **Fallback Behavior**: Gracefully falls back to primary display if detection fails
+
+**Supported Configurations:**
+- Single display (laptop screen only)
+- Dual display (laptop + external monitor)
+- Multiple displays (3+ monitors)
+- Mixed resolution setups
+- Portrait and landscape orientations
+- Different scale factors per display
 
 ### OCR Settings
 
@@ -331,6 +365,29 @@ The application automatically switches between these icons based on the system a
 - Close other resource-intensive applications
 - electron-vite provides faster builds and hot reload in development
 
+### Multi-Display Issues
+
+**Problem**: Capture window appears on wrong display
+
+**Solutions**:
+- Move your mouse cursor to the desired display before triggering capture
+- The app uses cursor position to determine the active display
+- Ensure all displays are properly connected and recognized by macOS
+
+**Problem**: Screen capture shows incorrect content from wrong monitor
+
+**Solutions**:
+- Verify the capture window appeared on the correct display
+- If issues persist, restart the application to refresh display detection
+- Check that macOS properly detects all connected displays in System Preferences → Displays
+
+**Problem**: Result windows appear on wrong display
+
+**Solutions**:
+- Result windows appear on the same display where capture was performed
+- If no active display is detected, windows will use cursor position or default to primary display
+- This behavior ensures consistency with the capture workflow
+
 ## 📋 System Requirements
 
 - **OS**: macOS 10.15 (Catalina) or later
@@ -338,6 +395,7 @@ The application automatically switches between these icons based on the system a
 - **Disk Space**: 250MB for installation
 - **Permissions**: Screen Recording access required
 - **Development**: Node.js 18+, Yarn (recommended)
+- **Displays**: Supports single or multiple displays with automatic detection
 
 ## 🤝 Contributing
 
