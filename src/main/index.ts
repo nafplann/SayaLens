@@ -44,6 +44,7 @@ class TrayScanner {
   private resultWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
   private storedLanguage: string = 'eng'
+  private activeDisplay: Electron.Display | null = null
 
   /**
    * Send analytics event to any open renderer window
@@ -310,7 +311,10 @@ class TrayScanner {
     ipcMain.handle('capture-and-process-qr', async (_event, bounds) => {
       try {
         console.log('Starting QR capture process...')
-        const imageBuffer = await this.screenCapture?.captureArea(bounds)
+        if (!this.activeDisplay) {
+          throw new Error('No active display information available')
+        }
+        const imageBuffer = await this.screenCapture?.captureArea(bounds, this.activeDisplay)
         console.log('Screen capture successful, processing QR...')
         const qrResult = await this.qrScanner?.scanImage(imageBuffer!)
         
@@ -337,7 +341,10 @@ class TrayScanner {
     ipcMain.handle('capture-and-process-ocr', async (_event, bounds) => {
       try {
         console.log('Starting OCR capture process...')
-        const imageBuffer = await this.screenCapture?.captureArea(bounds)
+        if (!this.activeDisplay) {
+          throw new Error('No active display information available')
+        }
+        const imageBuffer = await this.screenCapture?.captureArea(bounds, this.activeDisplay)
         console.log('Screen capture successful, processing OCR...')
 
         // Create a temporary image file
@@ -553,14 +560,28 @@ class TrayScanner {
   }
 
   private createCaptureWindow(mode: 'qr' | 'ocr'): void {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
+    // Get the current mouse cursor position and find the active display
+    const cursorPoint = screen.getCursorScreenPoint()
+    this.activeDisplay = screen.getDisplayNearestPoint(cursorPoint)
     
     console.log('Creating capture window')
-    console.log('displaySize: ', width, height)
+    console.log('Mouse cursor position:', cursorPoint)
+    console.log('Active display:', {
+      id: this.activeDisplay.id,
+      bounds: this.activeDisplay.bounds,
+      workArea: this.activeDisplay.workArea
+    })
+
+    const { width, height } = this.activeDisplay.workAreaSize
+    const { x, y } = this.activeDisplay.workArea
+    
+    console.log('Capture window size and position:', { x, y, width, height })
 
     this.captureWindow = new BrowserWindow({
       width,
       height,
+      x,
+      y,
       transparent: true,
       frame: false,
       alwaysOnTop: true,
@@ -600,15 +621,34 @@ class TrayScanner {
 
     this.captureWindow.on('closed', () => {
       this.captureWindow = null
+      this.activeDisplay = null
     })
   }
 
   private showResult(data: any): void {
     console.log('Creating result window')
 
+    // Calculate position for active display or fallback to primary display
+    let windowPosition: { x?: number; y?: number } = {}
+    
+    if (this.activeDisplay) {
+      // Center the result window on the active display
+      const centerX = this.activeDisplay.workArea.x + (this.activeDisplay.workArea.width - 720) / 2
+      const centerY = this.activeDisplay.workArea.y + (this.activeDisplay.workArea.height - 640) / 2
+      windowPosition = { x: Math.floor(centerX), y: Math.floor(centerY) }
+      
+      console.log('Positioning result window on active display:', {
+        display: this.activeDisplay.id,
+        position: windowPosition
+      })
+    } else {
+      console.log('No active display, using default positioning for result window')
+    }
+
     this.resultWindow = new BrowserWindow({
       width: 720,
       height: 640,
+      ...windowPosition,
       resizable: false,
       minimizable: false,
       maximizable: false,
@@ -645,9 +685,35 @@ class TrayScanner {
 
     console.log('Creating about window')
 
+    // Calculate position for active display or determine from cursor position
+    let windowPosition: { x?: number; y?: number } = {}
+    let targetDisplay = this.activeDisplay
+    
+    if (!targetDisplay) {
+      // If no active display from recent capture, use cursor position
+      const cursorPoint = screen.getCursorScreenPoint()
+      targetDisplay = screen.getDisplayNearestPoint(cursorPoint)
+      console.log('No active display, using cursor position for about window:', cursorPoint)
+    }
+    
+    if (targetDisplay) {
+      // Center the about window on the target display
+      const centerX = targetDisplay.workArea.x + (targetDisplay.workArea.width - 900) / 2
+      const centerY = targetDisplay.workArea.y + (targetDisplay.workArea.height - 800) / 2
+      windowPosition = { x: Math.floor(centerX), y: Math.floor(centerY) }
+      
+      console.log('Positioning about window on display:', {
+        display: targetDisplay.id,
+        position: windowPosition
+      })
+    } else {
+      console.log('No target display found, using default positioning for about window')
+    }
+
     this.aboutWindow = new BrowserWindow({
       width: 900,
       height: 800,
+      ...windowPosition,
       resizable: false,
       minimizable: false,
       maximizable: true,

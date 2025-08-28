@@ -288,8 +288,8 @@ export class VersionController {
     const cached = this.getCachedConfig()
     const cacheAge = Date.now() - cached.lastFetched
     
-    // Check for updates if cache is older than 1 hour (for periodic checks)
-    return cacheAge > (60 * 60 * 1000)
+    // Check for updates if cache is older than maxCacheAge (for periodic checks)
+    return cacheAge > this.maxCacheAge
   }
 
   private getCurrentVersion(): string {
