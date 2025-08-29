@@ -53,7 +53,7 @@ export class VersionController {
       networkTimeout?: number
     } = {}
   ) {
-    this.configUrl = configUrl || 'https://raw.githubusercontent.com/nafplann/sayalens/main/version-config.json'
+    this.configUrl = configUrl || 'https://raw.githubusercontent.com/nafplann/sayalens-app/refs/heads/main/config/version-config.json'
     this.maxCacheAge = options.maxCacheAge || (24 * 60 * 60 * 1000) // 24 hours
     this.networkTimeout = options.networkTimeout || 10000 // 10 seconds
     

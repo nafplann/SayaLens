@@ -5,6 +5,6 @@
   "deprecatedVersions": [],
   "forceUpdateVersions": [],
   "updateMessage": "🚀 A new version of SayaLens is available with improved OCR accuracy and bug fixes!",
-  "downloadUrl": "https://github.com/nafplann/sayalens/releases/latest",
+  "downloadUrl": "https://github.com/nafplann/sayalens-app/releases/latest",
   "killSwitchMessage": "This version of SayaLens is no longer supported. Please update to continue using the app."
 }
