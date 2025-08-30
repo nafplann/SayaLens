@@ -121,7 +121,7 @@ If you find SayaLens useful, consider supporting the development:
 1. Click the **SayaLens** icon in your menu bar
 2. Select **"Capture Text"**
 3. Drag to select the text area
-4. Release to extract - the text will be displayed with confidence score in a beautiful interface
+4. Release to extract - the text will be displayed in a beautiful interface
 
 ### Multi-Display Support
 
