@@ -24,9 +24,7 @@ export const initializeAnalytics = async () => {
   // Only initialize if we have a measurement ID
   if (GA_MEASUREMENT_ID) {
     ReactGA.initialize(GA_MEASUREMENT_ID, {
-      testMode: process.env.NODE_ENV === 'development', // Set to true for development
       gtagOptions: {
-        debug_mode: process.env.NODE_ENV === 'development',
         // Set app version as a custom parameter
         custom_map: {
           app_version: appVersion
