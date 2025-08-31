@@ -1,5 +1,6 @@
 import { app } from 'electron'
 const ElectronGA = require('electron-google-analytics4').default
+import {machineId} from 'node-machine-id';
 
 // Configuration
 export const GA_MEASUREMENT_ID = 'XXX' // Your Google Analytics Measurement ID
@@ -20,7 +21,8 @@ export class Analytics {
   async initialize(): Promise<void> {
     try {
       // Initialize GA with proper configuration
-      this.app = new ElectronGA(GA_MEASUREMENT_ID, GA_SECRET_KEY);
+      const clientID = await machineId(true);
+      this.app = new ElectronGA(GA_MEASUREMENT_ID, GA_SECRET_KEY, clientID);
       this.app.set('engagement_time_msec', 1000);
       this.initialized = true
 
@@ -80,6 +82,7 @@ export class Analytics {
       // Send pageview with a custom path
       await this.app?.setParams({
         page_path: page,
+        page_title: title || page,
         app_version: this.appVersion
       }).event('page_view');
 

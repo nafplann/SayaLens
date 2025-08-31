@@ -23,6 +23,7 @@ const api = {
     ipcRenderer.invoke('track-analytics-event', eventData),
   trackPageView: (pageData: { page: string; title?: string }) => 
     ipcRenderer.invoke('track-page-view', pageData),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // Window management
   captureComplete: () => ipcRenderer.send('capture-complete'),
