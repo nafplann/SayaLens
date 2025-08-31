@@ -21,6 +21,7 @@ import ScreenCapture from './modules/screenCapture.js'
 import QRScanner from './modules/qrScanner.js'
 import OCRProcessor from './modules/ocrProcessor.js'
 import { VersionController, VersionCheckResult } from './modules/versionControl.js'
+import { Analytics } from './modules/analytics.js'
 import {tmpdir} from 'node:os'
 import {writeFileSync} from 'node:fs'
 
@@ -40,32 +41,21 @@ class TrayScanner {
   private qrScanner: QRScanner | null = null
   private ocrProcessor: OCRProcessor | null = null
   private versionController: VersionController | null = null
+  private analytics: Analytics | null = null
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
   private storedLanguage: string = 'eng'
   private activeDisplay: Electron.Display | null = null
 
-  /**
-   * Send analytics event to any open renderer window
-   */
-  private sendAnalyticsEvent(action: string, category: string, label?: string, value?: number): void {
-    const eventData = { action, category, label, value }
-    
-    // Send to all open windows that might have analytics
-    const windows = [this.resultWindow, this.aboutWindow, this.captureWindow].filter(Boolean)
-    
-    windows.forEach(window => {
-      if (window && !window.isDestroyed()) {
-        window.webContents.send('track-analytics', eventData)
-      }
-    })
-    
-    console.log('Analytics event sent from main process:', eventData)
-  }
+
 
   async init(): Promise<void> {
-    // Initialize version controller first
+    // Initialize analytics first
+    this.analytics = new Analytics()
+    await this.analytics.initialize()
+
+    // Initialize version controller
     this.versionController = new VersionController()
     
     // Check version status on startup with comprehensive error handling
@@ -238,17 +228,17 @@ class TrayScanner {
     const contextMenu = Menu.buildFromTemplate([
       {
         label: `Capture Text`,
-        click: () => {
+        click: async () => {
           console.log('Tray action: Capture Text')
-          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Capture Text')
+          await this.analytics?.trayActionUsed('Capture Text')
           this.startOCR()
         }
       },
       {
         label: `Scan QR`,
-        click: () => {
+        click: async () => {
           console.log('Tray action: Scan QR')
-          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Scan QR')
+          await this.analytics?.trayActionUsed('Scan QR')
           this.startQRScan()
         }
       },
@@ -270,21 +260,22 @@ class TrayScanner {
         label: 'Check for Updates',
         click: async () => {
           console.log('Tray action: Check for Updates')
-          this.sendAnalyticsEvent('tray_action_used', 'tray', 'Check for Updates')
+          await this.analytics?.trayActionUsed('Check for Updates')
           await this.performManualUpdateCheck()
         }
       },
       {
         label: 'About SayaLens',
-        click: () => {
+        click: async () => {
           console.log('Tray action: About SayaLens')
-          this.sendAnalyticsEvent('tray_action_used', 'tray', 'About SayaLens')
+          await this.analytics?.trayActionUsed('About SayaLens')
           this.showAboutWindow()
         }
       },
       {
         label: 'Exit',
-        click: () => {
+        click: async () => {
+          await this.analytics?.appClosed();
           app.quit()
         }
       }
@@ -457,11 +448,20 @@ class TrayScanner {
 
     ipcMain.handle('track-analytics-event', async (_event, eventData: { action: string, category: string, label?: string, value?: number }) => {
       try {
-        // Log analytics event for debugging
-        console.log('Analytics event:', eventData)
+        await this.analytics?.trackEvent(eventData.action, eventData.category, eventData.label, eventData.value)
         return { success: true }
       } catch (error) {
         console.error('Failed to track analytics event:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('track-page-view', async (_event, pageData: { page: string, title?: string }) => {
+      try {
+        await this.analytics?.trackPageView(pageData.page, pageData.title)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to track page view:', error)
         return { success: false, error: (error as Error).message }
       }
     })
@@ -507,9 +507,9 @@ class TrayScanner {
 
     // Register global shortcut for text capture (Cmd/Ctrl + Shift + 1)
     const ocrShortcut = `${modifier}+Shift+1`
-    const registerOCRResult = globalShortcut.register(ocrShortcut, () => {
+    const registerOCRResult = globalShortcut.register(ocrShortcut, async () => {
       console.log(`Global shortcut triggered: ${ocrShortcut} (Text Capture)`)
-      this.sendAnalyticsEvent('global_shortcut_used', 'shortcuts', ocrShortcut)
+      await this.analytics?.globalShortcutUsed(ocrShortcut)
       this.startOCR()
     })
 
@@ -521,9 +521,9 @@ class TrayScanner {
 
     // Register global shortcut for QR scanning (Cmd/Ctrl + Shift + 2)
     const qrShortcut = `${modifier}+Shift+2`
-    const registerQRResult = globalShortcut.register(qrShortcut, () => {
+    const registerQRResult = globalShortcut.register(qrShortcut, async () => {
       console.log(`Global shortcut triggered: ${qrShortcut} (QR Scan)`)
-      this.sendAnalyticsEvent('global_shortcut_used', 'shortcuts', qrShortcut)
+      await this.analytics?.globalShortcutUsed(qrShortcut)
       this.startQRScan()
     })
 
@@ -751,6 +751,7 @@ class TrayScanner {
     // Monitor online/offline status
     process.on('online', () => {
       console.log('🌐 Network connection restored')
+      this.analytics?.networkRestored()
       // Perform immediate version check when coming back online
       setTimeout(() => this.performPeriodicVersionCheck(), 5000)
     })
@@ -764,7 +765,12 @@ class TrayScanner {
     const { status, config, isOffline, cacheAge } = versionStatus
 
     // Track version check event with offline context
-    this.sendAnalyticsEvent('version_check', 'app_lifecycle', `${status}_${isOffline ? 'offline' : 'online'}`)
+    await this.analytics?.versionCheckPerformed(`${status}_${isOffline ? 'offline' : 'online'}`)
+
+    // Track offline mode detection when using stale cache
+    if (isOffline && cacheAge > 0) {
+      await this.analytics?.offlineModeDetected(cacheAge)
+    }
 
     // Add offline indicator to messages
     const offlineNotice = isOffline ? '\n\n⚠️ You are currently offline.' : ''
@@ -790,6 +796,11 @@ class TrayScanner {
         const blockMessage = config.killSwitchMessage || 
           `This version (${versionStatus.userVersion}) is no longer supported and must be updated.`
         
+        // Track kill switch activation when using kill switch message
+        if (config.killSwitchMessage) {
+          await this.analytics?.killSwitchActivated()
+        }
+        
         await dialog.showMessageBox({
           type: 'error',
           title: 'App Disabled',
@@ -805,7 +816,7 @@ class TrayScanner {
           }
         })
         
-        this.sendAnalyticsEvent('version_blocked', 'app_lifecycle', versionStatus.userVersion)
+        await this.analytics?.versionBlocked(versionStatus.userVersion)
         return false
 
       case 'force_update':
@@ -825,7 +836,7 @@ class TrayScanner {
         })
         
         if (isOffline && forceResult.response === 0) {
-          this.sendAnalyticsEvent('force_update_continued_offline', 'app_lifecycle', versionStatus.userVersion)
+          await this.analytics?.forceUpdateContinuedOffline(versionStatus.userVersion)
           return true // Allow to continue offline
         }
         
@@ -833,7 +844,7 @@ class TrayScanner {
           shell.openExternal(config.downloadUrl)
         }
         
-        this.sendAnalyticsEvent('force_update_required', 'app_lifecycle', versionStatus.userVersion)
+        await this.analytics?.forceUpdateRequired(versionStatus.userVersion)
         return false
 
       case 'deprecated':
@@ -852,7 +863,7 @@ class TrayScanner {
           }
         })
         
-        this.sendAnalyticsEvent('version_deprecated_warning', 'app_lifecycle', versionStatus.userVersion)
+        await this.analytics?.versionDeprecatedWarning(versionStatus.userVersion)
         return true
 
       case 'allowed':
@@ -888,7 +899,10 @@ class TrayScanner {
     }
   }
 
-  private showOptionalUpdateNotification(_config: any): void {
+  private showOptionalUpdateNotification(config: any): void {
+    // Track update notification shown
+    this.analytics?.updateNotificationShown(config.latestVersion)
+    
     // Add update notification to tray icon (optional)
     if (this.tray) {
       try {
@@ -906,6 +920,9 @@ class TrayScanner {
   // Enhanced manual update check with offline awareness
   private async performManualUpdateCheck(): Promise<void> {
     if (!this.versionController) return
+    
+    // Track manual update check initiation
+    await this.analytics?.manualUpdateCheck()
     
     try {
       const versionStatus = await this.versionController.checkVersionStatus()
@@ -938,6 +955,9 @@ class TrayScanner {
       }
       
     } catch (error) {
+      // Track update check failure
+      await this.analytics?.updateCheckFailed((error as Error).message)
+      
       dialog.showMessageBox({
         type: 'error',
         title: 'Update Check Failed',

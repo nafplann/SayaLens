@@ -26,8 +26,8 @@ export default function About() {
     { icon: Palette, title: 'Clean UI', description: 'Beautiful, intuitive interface' }
   ];
 
-  const handleOpenUrl = (url: string) => {
-    Analytics.urlOpened()
+  const handleOpenUrl = async (url: string) => {
+    await Analytics.urlOpened()
     window.api.openExternalUrl(url)
   };
 

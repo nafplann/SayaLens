@@ -122,18 +122,18 @@ export default function Capture() {
       if (result?.success) {
         // Track successful capture
         if (state.mode === 'qr') {
-          Analytics.qrCaptureCompleted(true)
+          await Analytics.qrCaptureCompleted(true)
         } else {
-          Analytics.ocrCaptureCompleted(true)
+          await Analytics.ocrCaptureCompleted(true)
         }
         window.api?.showResult(result)
         window.api?.captureComplete()
       } else {
         // Track failed capture
         if (state.mode === 'qr') {
-          Analytics.qrCaptureCompleted(false)
+          await Analytics.qrCaptureCompleted(false)
         } else {
-          Analytics.ocrCaptureCompleted(false)
+          await Analytics.ocrCaptureCompleted(false)
         }
         window.api?.showResult({
           success: false,
@@ -147,9 +147,9 @@ export default function Capture() {
       
       // Track error in capture
       if (state.mode === 'qr') {
-        Analytics.qrCaptureCompleted(false)
+        await Analytics.qrCaptureCompleted(false)
       } else {
-        Analytics.ocrCaptureCompleted(false)
+        await Analytics.ocrCaptureCompleted(false)
       }
       
       window.api?.showResult({
