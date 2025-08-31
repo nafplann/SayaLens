@@ -35,7 +35,6 @@ export class Analytics {
   }
 
 
-
   /**
    * Track custom events
    */

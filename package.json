@@ -1,6 +1,6 @@
 {
   "name": "sayalens",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "nafplann@gmail.com",
   "description": "Extract text from anywhere on your screen in seconds",
   "main": "out/main/index.js",
