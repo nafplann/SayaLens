@@ -288,7 +288,7 @@ export default function OCRResultPage() {
                     <img
                         src={resultData.capturedImage.startsWith('data:')
                             ? resultData.capturedImage
-                            : `media://${resultData.capturedImage}`
+                            : `media://${resultData.capturedImage}&encoded=${btoa(resultData.capturedImage)}`
                         }
                         alt="Captured screenshot"
                         className="w-full h-auto max-h-96 object-contain"

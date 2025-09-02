@@ -13,6 +13,7 @@ dist-ssr
 *.local
 coverage
 out
+.yarn
 
 # Editor directories and files
 .vscode/*

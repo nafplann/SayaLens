@@ -599,7 +599,7 @@ class TrayScanner {
 
     // Load the capture React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.captureWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/capture'))
+      this.captureWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/capture`)
     } else {
       this.captureWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/capture'))
     }
@@ -649,7 +649,7 @@ class TrayScanner {
       width: 720,
       height: 640,
       ...windowPosition,
-      resizable: false,
+      resizable: true,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
@@ -660,9 +660,11 @@ class TrayScanner {
       },
     })
 
+      this.resultWindow.webContents.openDevTools(); 
+
     // Load the result React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.resultWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/result'))
+      this.resultWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/result`)
     } else {
       this.resultWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/result'))
     }
@@ -728,7 +730,7 @@ class TrayScanner {
 
     // Load the about React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.aboutWindow.loadURL(join(process.env['ELECTRON_RENDERER_URL'], '#/about'))
+      this.aboutWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/about`)
     } else {
       this.aboutWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/about'))
     }
@@ -976,7 +978,9 @@ app.whenReady().then(() => {
   // Handle protocol call
   protocol.handle('media', async request => {
     const url = request.url.replace(/^media:\/\//, '/'); // remove media:// and return the path from root
-    return net.fetch(`file://${url}`);
+    const params = new URLSearchParams(url);
+    const filepath = atob(params.get('encoded'));
+    return net.fetch(`file:///${filepath}`);
   });
 
   trayScanner.init()
