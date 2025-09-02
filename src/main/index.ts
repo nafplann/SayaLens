@@ -103,10 +103,7 @@ class TrayScanner {
 
     // Prevent app from quitting when all windows are closed
     app.on('window-all-closed', () => {
-      // On macOS, keep the app running in the background
-      if (process.platform !== 'darwin') {
-        app.quit()
-      }
+      // Do nothing, must be exited via tray icon
     })
   }
 
@@ -246,11 +243,11 @@ class TrayScanner {
         label: 'Global Shortcuts',
         submenu: [
           {
-            label: `${modifierDisplay}+Shift+1 - Scan QR Code`,
+            label: `${modifierDisplay}+Shift+1 - Capture Text`,
             enabled: false
           },
           {
-            label: `${modifierDisplay}+Shift+2 - Capture Text`,
+            label: `${modifierDisplay}+Shift+2 - Scan QR Code`,
             enabled: false
           }
         ]
@@ -302,9 +299,17 @@ class TrayScanner {
     ipcMain.handle('capture-and-process-qr', async (_event, bounds) => {
       try {
         console.log('Starting QR capture process...')
+        
         if (!this.activeDisplay) {
           throw new Error('No active display information available')
         }
+
+        // Handle macos menu bar
+        if (process.platform === 'darwin') {
+          const menuBarHeight = 38;
+          bounds.y += menuBarHeight
+        }
+        
         const imageBuffer = await this.screenCapture?.captureArea(bounds, this.activeDisplay)
         console.log('Screen capture successful, processing QR...')
         const qrResult = await this.qrScanner?.scanImage(imageBuffer!)
@@ -332,9 +337,17 @@ class TrayScanner {
     ipcMain.handle('capture-and-process-ocr', async (_event, bounds) => {
       try {
         console.log('Starting OCR capture process...')
+        
         if (!this.activeDisplay) {
           throw new Error('No active display information available')
         }
+
+        // Handle macos menu bar
+        if (process.platform === 'darwin') {
+          const menuBarHeight = 38;
+          bounds.y += menuBarHeight
+        }
+        
         const imageBuffer = await this.screenCapture?.captureArea(bounds, this.activeDisplay)
         console.log('Screen capture successful, processing OCR...')
 
@@ -601,7 +614,7 @@ class TrayScanner {
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       this.captureWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/capture`)
     } else {
-      this.captureWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/capture'))
+      this.captureWindow.loadURL(`file://${__dirname}/../renderer/index.html#/capture`)
     }
 
     // Add error handling for preload script
@@ -660,11 +673,13 @@ class TrayScanner {
       },
     })
 
+    this.resultWindow.removeMenu();
+
     // Load the result React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       this.resultWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/result`)
     } else {
-      this.resultWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/result'))
+      this.resultWindow.loadURL(`file://${__dirname}/../renderer/index.html#/result`)
     }
 
     this.resultWindow.webContents.once('did-finish-load', () => {
@@ -726,11 +741,13 @@ class TrayScanner {
       title: 'About SayaLens'
     })
 
+    this.aboutWindow.removeMenu();
+
     // Load the about React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       this.aboutWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/about`)
     } else {
-      this.aboutWindow.loadURL(join('file://', __dirname, '../renderer/index.html#/about'))
+      this.aboutWindow.loadURL(`file://${__dirname}/../renderer/index.html#/about`)
     }
 
     this.aboutWindow.on('closed', () => {
@@ -997,7 +1014,7 @@ app.whenReady().then(() => {
   protocol.handle('media', async request => {
     const url = request.url.replace(/^media:\/\//, '/'); // remove media:// and return the path from root
     const params = new URLSearchParams(url);
-    const filepath = atob(params.get('encoded'));
+    const filepath = atob(params.get('encoded') ?? '');
     return net.fetch(`file:///${filepath}`);
   });
 

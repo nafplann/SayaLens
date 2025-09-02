@@ -87,10 +87,6 @@ export default function Capture() {
       height: Math.abs(state.currentY - state.startY)
     }
 
-    // Handle macos menu bar
-    const menuBarHeight = 38;
-    bounds.y += menuBarHeight
-
     // Minimum selection size
     if (bounds.width < 10 || bounds.height < 10) {
       setState(prev => ({ ...prev, isSelecting: false }))
