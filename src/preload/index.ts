@@ -21,6 +21,8 @@ const api = {
   openExternalUrl: (url: string) => ipcRenderer.invoke('open-external-url', url),
   trackAnalyticsEvent: (eventData: { action: string; category: string; label?: string; value?: number }) => 
     ipcRenderer.invoke('track-analytics-event', eventData),
+  trackPageView: (pageData: { page: string; title?: string }) => 
+    ipcRenderer.invoke('track-page-view', pageData),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // Window management
@@ -33,8 +35,6 @@ const api = {
     ipcRenderer.on('init-capture', callback),
   onShowData: (callback: (event: any, data: any) => void) => 
     ipcRenderer.on('show-data', callback),
-  onTrackAnalytics: (callback: (event: any, data: { action: string; category: string; label?: string; value?: number }) => void) =>
-    ipcRenderer.on('track-analytics', callback),
   
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)

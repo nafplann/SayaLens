@@ -5,7 +5,7 @@ import './assets/globals.css'
 import Capture from './pages/Capture'
 import Result from './pages/Result'
 import About from './pages/About'
-import { initializeAnalytics, Analytics } from './lib/analytics'
+import { Analytics } from './lib/analytics'
 
 // Main menu component
 function MainMenu() {
@@ -49,33 +49,13 @@ function PageTracker() {
   useEffect(() => {
     // Track page view when location changes
     Analytics.pageVisited(location.pathname)
-  }, [location])
+  }, [location.pathname])
 
   return null
 }
 
 // Main app component
 function App() {
-  useEffect(() => {
-    // Initialize Google Analytics with version tracking when app starts
-    const initAnalytics = async () => {
-      try {
-        await initializeAnalytics()
-        Analytics.appStarted()
-        Analytics.appVersionInfo()
-      } catch (error) {
-        console.error('Failed to initialize analytics:', error)
-      }
-    }
-    
-    initAnalytics()
-
-    // Track app close when component unmounts
-    return () => {
-      Analytics.appClosed()
-    }
-  }, [])
-
   return (
     <Router>
       <PageTracker />

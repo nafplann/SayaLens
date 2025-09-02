@@ -17,8 +17,11 @@ import {
 // @ts-ignore
 import appIcon from '../../../../resources/appicon.png';
 import { Analytics } from '../lib/analytics';
+import { useState, useEffect } from 'react';
 
 export default function About() {
+  const [appVersion, setAppVersion] = useState('1.0.0')
+  
   const features = [
     { icon: Zap, title: 'Fast OCR', description: 'Instant text recognition' },
     { icon: Shield, title: 'Privacy First', description: 'All processing done locally' },
@@ -26,8 +29,24 @@ export default function About() {
     { icon: Palette, title: 'Clean UI', description: 'Beautiful, intuitive interface' }
   ];
 
-  const handleOpenUrl = (url: string) => {
-    Analytics.urlOpened()
+  useEffect(() => {
+    // Fetch app version from main process
+    const fetchAppVersion = async () => {
+      try {
+        const versionResult = await window.api?.getAppVersion()
+        if (versionResult?.success && versionResult.version) {
+          setAppVersion(versionResult.version)
+        }
+      } catch (error) {
+        console.warn('Failed to fetch app version:', error)
+      }
+    }
+    
+    fetchAppVersion()
+  }, [])
+
+  const handleOpenUrl = async (url: string) => {
+    await Analytics.urlOpened()
     window.api.openExternalUrl(url)
   };
 
@@ -43,7 +62,7 @@ export default function About() {
               <h1 className="text-4xl font-bold text-slate-900">SayaLens</h1>
               <p className="text-slate-600 mt-2 text-lg">Advanced OCR and text extraction tool</p>
               <Badge variant="secondary" className="mt-2 bg-blue-100 text-blue-800">
-                Version 1.0.0
+                Version {appVersion}
               </Badge>
             </div>
           </div>

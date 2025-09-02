@@ -158,7 +158,7 @@ export default function OCRResultPage() {
   const handleCopy = async (text: string, close: boolean) => {
     try {
       await window.api?.copyToClipboard(text)
-      Analytics.textCopied()
+      await Analytics.textCopied()
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (err) {
