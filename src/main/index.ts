@@ -649,7 +649,7 @@ class TrayScanner {
       width: 720,
       height: 640,
       ...windowPosition,
-      resizable: true,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       alwaysOnTop: true,
@@ -659,8 +659,6 @@ class TrayScanner {
         preload: join(__dirname, '../preload/index.js')
       },
     })
-
-      this.resultWindow.webContents.openDevTools(); 
 
     // Load the result React app
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
