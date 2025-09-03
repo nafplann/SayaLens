@@ -7,9 +7,9 @@
 [![Vite](https://img.shields.io/badge/Vite-7.1.3-646CFF?logo=vite)](https://vitejs.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)](https://nodejs.org)
 
-**Effortlessly scan QR codes and extract text from your screen.** SayaLens is a streamlined macOS system tray app that makes screen scanning simple and efficient. Instead of manually typing URLs or copying text from images, just select any area of your screen and let SayaLens do the work.
+**Effortlessly scan QR codes and extract text from your screen.** SayaLens is a streamlined cross-platform system tray app that makes screen scanning simple and efficient. Available for both macOS and Windows, just select any area of your screen and let SayaLens do the work instead of manually typing URLs or copying text from images.
 
-Built with privacy in mind, all processing happens locally on your Mac. Whether you're capturing text from documents, scanning QR codes from presentations, or extracting information from screenshots, SayaLens provides quick, accurate results without the hassle.
+Built with privacy in mind, all processing happens locally on your device. Whether you're capturing text from documents, scanning QR codes from presentations, or extracting information from screenshots, SayaLens provides quick, accurate results without the hassle.
 
 ![SayaLens Demo](resources/demo.gif)
 
@@ -19,20 +19,20 @@ Built with privacy in mind, all processing happens locally on your Mac. Whether 
 - 📝 **Fast OCR**: Instant text recognition and extraction from images
 - 🖥️ **Screen Area Selection**: Intuitive drag-to-select interface with React UI
 - 🖼️ **Multi-Display Support**: Automatically detects and captures from the active monitor where your cursor is located
-- 🍎 **Native macOS Integration**: Lives in your system tray for instant access
+- 🖥️ **Cross-Platform Support**: Lives in your system tray on both macOS and Windows for instant access
 - 📋 **Clipboard Integration**: Automatically copy results to clipboard
 - 🔐 **Privacy First**: All processing happens locally on your device - no data leaves your machine
 - ⚡ **Lightweight**: Minimal system resources usage for optimal performance
 - 🎨 **Clean UI**: Beautiful, intuitive interface with modern shadcn/ui components
 - 🌍 **Multi-Language Support**: OCR supports 14+ languages including English, Arabic, Chinese, and more
-- 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to macOS appearance
+- 🌓 **Dark/Light Mode Support**: Automatically adapts tray icon to system appearance on macOS and Windows
 - 🔷 **TypeScript**: Full type safety and better development experience
 
 ## 📥 Download
 
-Get the latest version of SayaLens for macOS:
+Get the latest version of SayaLens:
 
-[![Download SayaLens](https://img.shields.io/badge/Download-SayaLens%20v1.0.0-blue.svg?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/nafplann/SayaLens/releases/latest)
+[![Download SayaLens](https://img.shields.io/badge/Download-%20Latest%20Version-blue.svg?style=for-the-badge&logo=electron&logoColor=white)](https://github.com/nafplann/SayaLens/releases/latest)
 
 ## ☕ Support
 
@@ -43,7 +43,7 @@ If you find SayaLens useful, consider supporting the development:
 
 ## 🗺️ Roadmap
 
-- **Support Windows and Linux**: Expand platform compatibility beyond macOS to bring SayaLens to more users
+- **Linux Support**: Expand platform compatibility to include Linux alongside the current macOS and Windows support
 
 ## 🛠️ Tech Stack
 
@@ -58,7 +58,13 @@ If you find SayaLens useful, consider supporting the development:
 
 ### Prerequisites
 
+#### For macOS
 - **macOS 10.15** or later
+- **Node.js 18** or later
+- **Yarn** package manager (recommended) or npm
+
+#### For Windows
+- **Windows 10** or later
 - **Node.js 18** or later
 - **Yarn** package manager (recommended) or npm
 
@@ -102,23 +108,29 @@ If you find SayaLens useful, consider supporting the development:
 
 ### Getting Started
 
-1. **Launch the app** - The SayaLens icon will appear in your macOS menu bar
-2. **Grant permissions** - When first running, you'll be prompted to grant screen recording permissions:
+1. **Launch the app** - The SayaLens icon will appear in your system tray (menu bar on macOS, system tray on Windows)
+2. **Grant permissions** - When first running, you may be prompted to grant screen recording permissions:
+
+   #### macOS
    - Open **System Preferences** (or **System Settings** on macOS 13+)
    - Navigate to **Privacy & Security** → **Screen Recording**
    - Add and enable **SayaLens**
    - Restart the application
 
+   #### Windows
+   - No additional permissions required - SayaLens works out of the box
+   - Windows may show a security warning on first launch - click "More info" and "Run anyway" to trust the application
+
 ### Scanning QR Codes
 
-1. Click the **SayaLens** icon in your menu bar
+1. Click the **SayaLens** icon in your system tray
 2. Select **"Scan QR"**
 3. Drag to select the area containing the QR code
 4. Release to scan - the result will be displayed in a modern React UI and copied to your clipboard
 
 ### Extracting Text (OCR)
 
-1. Click the **SayaLens** icon in your menu bar
+1. Click the **SayaLens** icon in your system tray
 2. Select **"Capture Text"**
 3. Drag to select the text area
 4. Release to extract - the text will be displayed in a beautiful interface
@@ -141,8 +153,8 @@ SayaLens automatically detects which monitor you're actively using and provides 
 ### Keyboard Shortcuts
 
 #### Global Shortcuts (work system-wide)
-- **Cmd+Shift+1**: Start QR code scanning
-- **Cmd+Shift+2**: Start text capture (OCR)
+- **macOS**: Cmd+Shift+1 (QR scan) / Cmd+Shift+2 (text capture)
+- **Windows**: Ctrl+Shift+1 (QR scan) / Ctrl+Shift+2 (text capture)
 
 #### During Capture
 - **Escape**: Cancel current selection
@@ -171,7 +183,7 @@ SayaLens automatically detects which monitor you're actively using and provides 
 - Use shadcn/ui components when possible
 - Add unit tests for new features
 - Update documentation for user-facing changes
-- Test on multiple macOS versions when possible
+- Test on multiple platforms (macOS and Windows) when possible
 
 ## 📄 License
 
