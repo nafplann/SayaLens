@@ -217,7 +217,7 @@ class TrayScanner {
     console.log(`Created tray icon for ${process.platform === 'darwin' ? (nativeTheme.shouldUseDarkColors ? 'dark' : 'light') + ' mode' : 'default mode'}`)
 
     this.tray = new Tray(icon)
-    this.tray.setToolTip('SayaLens - A text grabber')
+    this.tray.setToolTip('SayaLens - Extract text from anywhere on your screen in seconds')
 
     // Platform-specific modifier key display
     const modifierDisplay = process.platform === 'darwin' ? 'Cmd' : 'Ctrl'
