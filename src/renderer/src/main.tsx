@@ -5,6 +5,8 @@ import './assets/globals.css'
 import Capture from './pages/Capture'
 import Result from './pages/Result'
 import About from './pages/About'
+import ControlPanel from './pages/ControlPanel'
+import RecordingResult from './pages/RecordingResult'
 import { Analytics } from './lib/analytics'
 
 // Main menu component
@@ -63,6 +65,8 @@ function App() {
         <Route path="/" element={<MainMenu />} />
         <Route path="/capture" element={<Capture />} />
         <Route path="/result" element={<Result />} />
+        <Route path="/control-panel" element={<ControlPanel />} />
+        <Route path="/recording-result" element={<RecordingResult />} />
         <Route path="/about" element={<About />} />
       </Routes>
     </Router>

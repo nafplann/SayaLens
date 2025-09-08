@@ -37,7 +37,33 @@ const api = {
     ipcRenderer.on('show-data', callback),
   
   // Remove listeners
-  removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
+  removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
+
+  // Screen recording APIs
+  startRecording: (settings: any) => ipcRenderer.invoke('start-recording', settings),
+  stopRecording: () => ipcRenderer.invoke('stop-recording'),
+  pauseRecording: () => ipcRenderer.invoke('pause-recording'),
+  resumeRecording: () => ipcRenderer.invoke('resume-recording'),
+  getRecordingState: () => ipcRenderer.invoke('get-recording-state'),
+  
+  // File operations for recordings
+  openFileLocation: (filePath: string) => ipcRenderer.invoke('open-file-location', filePath),
+  convertToGif: (filePath: string) => ipcRenderer.invoke('convert-to-gif', filePath),
+  saveRecordingFile: (buffer: Uint8Array, filePath: string) => ipcRenderer.invoke('save-recording-file', buffer, filePath),
+  
+  // Recording window management
+  closeControlPanel: () => ipcRenderer.send('close-control-panel'),
+  closeRecordingResult: () => ipcRenderer.send('close-recording-result'),
+  
+  // Recording event listeners
+  onRecordingStateChange: (callback: (event: any, data: any) => void) => 
+    ipcRenderer.on('recording-state-change', callback),
+  onRecordingComplete: (callback: (event: any, data: any) => void) => 
+    ipcRenderer.on('recording-complete', callback),
+  onShowRecordingData: (callback: (event: any, data: any) => void) => 
+    ipcRenderer.on('show-recording-data', callback),
+  onConversionProgress: (callback: (event: any, progress: number) => void) => 
+    ipcRenderer.on('conversion-progress', callback)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

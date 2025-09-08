@@ -20,6 +20,8 @@ import {is} from '@electron-toolkit/utils'
 import ScreenCapture from './modules/screenCapture.js'
 import QRScanner from './modules/qrScanner.js'
 import OCRProcessor from './modules/ocrProcessor.js'
+import ScreenRecorder from './modules/screenRecorder.js'
+import VideoProcessor from './modules/videoProcessor.js'
 import { VersionController, VersionCheckResult } from './modules/versionControl.js'
 import { Analytics } from './modules/analytics.js'
 import {tmpdir} from 'node:os'
@@ -40,11 +42,15 @@ class TrayScanner {
   private screenCapture: ScreenCapture | null = null
   private qrScanner: QRScanner | null = null
   private ocrProcessor: OCRProcessor | null = null
+  private screenRecorder: ScreenRecorder | null = null
+  private videoProcessor: VideoProcessor | null = null
   private versionController: VersionController | null = null
   private analytics: Analytics | null = null
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
+  private controlPanelWindow: BrowserWindow | null = null
+  private recordingResultWindow: BrowserWindow | null = null
   private storedLanguage: string = 'eng'
   private activeDisplay: Electron.Display | null = null
 
@@ -77,6 +83,8 @@ class TrayScanner {
     this.screenCapture = new ScreenCapture()
     this.qrScanner = new QRScanner()
     this.ocrProcessor = new OCRProcessor()
+    this.screenRecorder = new ScreenRecorder()
+    this.videoProcessor = new VideoProcessor()
 
     // Check screen recording permissions on startup for macOS
     if (process.platform === 'darwin') {
@@ -109,12 +117,25 @@ class TrayScanner {
 
   private checkInitialPermissions(): void {
     try {
-      console.log('Checking initial screen recording permissions...')
-      const hasPermission = this.screenCapture?.checkPermissions()
-      if (!hasPermission) {
-        console.warn('Screen recording permission not granted. User will need to enable it manually.')
+      console.log('Checking initial screen capture permissions...')
+      const hasCapturePermission = this.screenCapture?.checkPermissions()
+      if (!hasCapturePermission) {
+        console.warn('Screen capture permission not granted. User will need to enable it manually.')
       } else {
-        console.log('Screen recording permission is granted.')
+        console.log('Screen capture permission is granted.')
+      }
+
+      // Check screen recording permissions (different from capture)
+      if (process.platform === 'darwin') {
+        this.screenRecorder?.checkPermissions().then(hasRecordingPermission => {
+          if (!hasRecordingPermission) {
+            console.warn('Screen recording permission not granted.')
+          } else {
+            console.log('Screen recording permission is granted.')
+          }
+        }).catch(error => {
+          console.warn('Screen recording permission check failed:', error)
+        })
       }
     } catch (error) {
       console.warn('Permission check failed:', error)
@@ -237,6 +258,15 @@ class TrayScanner {
           console.log('Tray action: Scan QR')
           await this.analytics?.trayActionUsed('Scan QR')
           this.startQRScan()
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'Record Screen',
+        click: async () => {
+          console.log('Tray action: Record Screen')
+          await this.analytics?.trayActionUsed('Record Screen')
+          this.startScreenRecording()
         }
       },
       {
@@ -512,6 +542,153 @@ class TrayScanner {
         this.resultWindow = null
       }
     })
+
+    // Screen recording IPC handlers
+    ipcMain.handle('start-recording', async (_event, settings) => {
+      try {
+        console.log('IPC: Starting recording with settings:', settings)
+        const result = await this.screenRecorder?.startRecording(settings)
+        
+        if (result?.success) {
+          this.updateTrayIconForRecording(true)
+          await this.analytics?.recordingStarted(settings)
+        }
+        
+        return result
+      } catch (error) {
+        console.error('IPC: Failed to start recording:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('stop-recording', async () => {
+      try {
+        console.log('IPC: Stopping recording')
+        const result = await this.screenRecorder?.stopRecording()
+        
+        if (result?.success) {
+          this.updateTrayIconForRecording(false)
+          await this.analytics?.recordingCompleted(result.duration || 0, 'mp4')
+          
+          // Show recording result window
+          this.createRecordingResultWindow(result)
+        }
+        
+        return result
+      } catch (error) {
+        console.error('IPC: Failed to stop recording:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('pause-recording', async () => {
+      try {
+        await this.screenRecorder?.pauseRecording()
+        await this.analytics?.recordingPaused(this.screenRecorder?.getState().duration || 0)
+        return { success: true }
+      } catch (error) {
+        console.error('IPC: Failed to pause recording:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('resume-recording', async () => {
+      try {
+        await this.screenRecorder?.resumeRecording()
+        await this.analytics?.recordingResumed()
+        return { success: true }
+      } catch (error) {
+        console.error('IPC: Failed to resume recording:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('get-recording-state', async () => {
+      try {
+        const state = this.screenRecorder?.getState()
+        return { success: true, state }
+      } catch (error) {
+        console.error('IPC: Failed to get recording state:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    // File operations for recordings
+    ipcMain.handle('open-file-location', async (_event, filePath: string) => {
+      try {
+        await shell.showItemInFolder(filePath)
+        return { success: true }
+      } catch (error) {
+        console.error('IPC: Failed to open file location:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('convert-to-gif', async (_event, filePath: string) => {
+      try {
+        console.log('IPC: Converting to GIF:', filePath)
+        
+        const outputPath = filePath.replace('.mp4', '.gif')
+        const result = await this.videoProcessor?.convertMp4ToGif(filePath, outputPath)
+        
+        if (result?.success) {
+          await this.analytics?.formatConverted('mp4', 'gif', result.duration)
+        }
+        
+        return result
+      } catch (error) {
+        console.error('IPC: Failed to convert to GIF:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipcMain.handle('save-recording-file', async (_event, buffer: Uint8Array, filePath: string) => {
+      try {
+        console.log('IPC: Saving recording file:', filePath, 'Size:', buffer.length, 'bytes')
+        
+        const fs = require('fs').promises
+        await fs.writeFile(filePath, buffer)
+        
+        const stats = await fs.stat(filePath)
+        console.log('File saved successfully, size:', stats.size, 'bytes')
+        
+        // Show recording result window
+        const recordingResult = {
+          success: true,
+          outputPath: filePath,
+          fileSize: stats.size,
+          duration: 0, // Will be calculated by the renderer
+          metadata: {
+            width: 1920,
+            height: 1080,
+            fps: 30,
+            codec: 'h264'
+          }
+        }
+        
+        this.createRecordingResultWindow(recordingResult)
+        
+        return { success: true, filePath, fileSize: stats.size }
+      } catch (error) {
+        console.error('IPC: Failed to save recording file:', error)
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    // Control panel and result window management
+    ipcMain.on('close-control-panel', () => {
+      if (this.controlPanelWindow) {
+        this.controlPanelWindow.close()
+        this.controlPanelWindow = null
+      }
+    })
+
+    ipcMain.on('close-recording-result', () => {
+      if (this.recordingResultWindow) {
+        this.recordingResultWindow.close()
+        this.recordingResultWindow = null
+      }
+    })
   }
 
   private setupGlobalShortcuts(): void {
@@ -552,6 +729,32 @@ class TrayScanner {
 
   private async startQRScan(): Promise<void> {
     this.createCaptureWindow('qr')
+  }
+
+  private async startScreenRecording(): Promise<void> {
+    try {
+      console.log('Starting screen recording flow...')
+      
+      // Check if already recording
+      if (this.screenRecorder?.isRecording()) {
+        console.warn('Recording already in progress')
+        return
+      }
+
+      // Check permissions
+      const hasPermission = await this.screenRecorder?.checkPermissions()
+      if (!hasPermission) {
+        console.warn('Screen recording permission not granted')
+        return
+      }
+
+      // Create and show control panel
+      this.createControlPanel()
+      
+    } catch (error) {
+      console.error('Failed to start screen recording:', error)
+      await this.analytics?.recordingFailed((error as Error).message, 'startup')
+    }
   }
 
   private async startOCR(): Promise<void> {
@@ -753,6 +956,122 @@ class TrayScanner {
     this.aboutWindow.on('closed', () => {
       this.aboutWindow = null
     })
+  }
+
+  private createControlPanel(): void {
+    // Don't create a new control panel if one already exists
+    if (this.controlPanelWindow) {
+      this.controlPanelWindow.focus()
+      return
+    }
+
+    console.log('Creating control panel window')
+
+    // Calculate position for control panel
+    let windowPosition: { x?: number; y?: number } = {}
+    
+    const cursorPoint = screen.getCursorScreenPoint()
+    const targetDisplay = screen.getDisplayNearestPoint(cursorPoint)
+    
+    if (targetDisplay) {
+      const centerX = targetDisplay.workArea.x + (targetDisplay.workArea.width - 400) / 2
+      const centerY = targetDisplay.workArea.y + (targetDisplay.workArea.height - 300) / 2
+      windowPosition = { x: Math.floor(centerX), y: Math.floor(centerY) }
+    }
+
+    this.controlPanelWindow = new BrowserWindow({
+      width: 900,
+      height: 900,
+      ...windowPosition,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      alwaysOnTop: true,
+      frame: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: join(__dirname, '../preload/index.js')
+      },
+      title: 'Screen Recording Control Panel'
+    })
+    // this.controlPanelWindow.webContents.openDevTools();
+
+    // Load the control panel React app
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      this.controlPanelWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/control-panel`)
+    } else {
+      this.controlPanelWindow.loadURL(`file://${__dirname}/../renderer/index.html#/control-panel`)
+    }
+
+    this.controlPanelWindow.on('closed', () => {
+      this.controlPanelWindow = null
+    })
+  }
+
+  private createRecordingResultWindow(data: any): void {
+    // Don't create a new window if one already exists
+    if (this.recordingResultWindow) {
+      this.recordingResultWindow.focus()
+      return
+    }
+
+    console.log('Creating recording result window')
+
+    // Calculate position similar to other result windows
+    let windowPosition: { x?: number; y?: number } = {}
+    
+    if (this.activeDisplay) {
+      const centerX = this.activeDisplay.workArea.x + (this.activeDisplay.workArea.width - 720) / 2
+      const centerY = this.activeDisplay.workArea.y + (this.activeDisplay.workArea.height - 640) / 2
+      windowPosition = { x: Math.floor(centerX), y: Math.floor(centerY) }
+    }
+
+    this.recordingResultWindow = new BrowserWindow({
+      width: 720,
+      height: 640,
+      ...windowPosition,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      alwaysOnTop: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: join(__dirname, '../preload/index.js')
+      },
+      title: 'Recording Complete'
+    })
+
+    this.recordingResultWindow.removeMenu()
+
+    // Load the recording result React app
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      this.recordingResultWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/recording-result`)
+    } else {
+      this.recordingResultWindow.loadURL(`file://${__dirname}/../renderer/index.html#/recording-result`)
+    }
+
+    this.recordingResultWindow.webContents.once('did-finish-load', () => {
+      this.recordingResultWindow?.webContents.send('show-recording-data', data)
+    })
+
+    this.recordingResultWindow.on('closed', () => {
+      this.recordingResultWindow = null
+    })
+  }
+
+  private updateTrayIconForRecording(isRecording: boolean): void {
+    if (this.tray) {
+      // TODO: Update tray icon to show recording state
+      // For now, just update the tooltip
+      const tooltip = isRecording 
+        ? 'SayaLens - Recording in progress...'
+        : 'SayaLens - Extract text from anywhere on your screen in seconds'
+      
+      this.tray.setToolTip(tooltip)
+      console.log(`Tray icon updated for recording state: ${isRecording}`)
+    }
   }
 
   private setupPeriodicVersionChecks(): void {
